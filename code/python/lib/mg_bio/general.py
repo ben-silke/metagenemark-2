@@ -20,10 +20,7 @@ def compute_gc_from_sequences(sequences):
     total = sum(counts.values())
     count_gc = counts["G"] + counts["C"]
 
-    if total == 0:
-        return 0.0
-
-    return 100 * count_gc / float(total)
+    return 0.0 if total == 0 else 100 * count_gc / float(total)
 
 
 def compute_single_gc_from_file(pf_sequences):

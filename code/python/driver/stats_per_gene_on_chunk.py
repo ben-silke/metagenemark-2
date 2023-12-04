@@ -102,7 +102,7 @@ def apply_genome_splitter_to_labels(seqname_to_info, labels):
         for s, list_info in seqname_to_info.items()
     }
 
-    list_labels = list()
+    list_labels = []
 
     for lab in labels:
         overlapping = seqname_to_interval_tree[lab.seqname()].overlap(lab.left(), lab.right() + 1)
@@ -122,63 +122,57 @@ def apply_genome_splitter_to_labels(seqname_to_info, labels):
 
 
 
-        if True or len(overlapping) > 2:
-            for chunk in overlapping:
+        for chunk in overlapping:
 
                 # partial both
-                if lab.left() < chunk[0] and lab.right() > chunk[1]:
-                    lab_partial = copy.deepcopy(lab)
-                    lab_partial.coordinates().left = chunk[0]
-                    lab_partial.coordinates().right = chunk[1]
+            if lab.left() < chunk[0] and lab.right() > chunk[1]:
+                lab_partial = copy.deepcopy(lab)
+                lab_partial.coordinates().left = chunk[0]
+                lab_partial.coordinates().right = chunk[1]
 
-                    if lab.strand() == "+":
-                        r = (lab.right() - lab_partial.left() + 1) % 3
-                        lab_partial.coordinates().left += r
-                        r = (lab_partial.right() - lab_partial.left() + 1) % 3
-                        lab_partial.coordinates().right -= r
-                    else:
-                        r = (lab_partial.right() - lab.left() + 1) % 3
-                        lab_partial.coordinates().right -= r
-                        r = (lab_partial.right() - lab_partial.left() + 1) % 3
-                        lab_partial.coordinates().left += r
+                if lab.strand() == "+":
+                    r = (lab.right() - lab_partial.left() + 1) % 3
+                    lab_partial.coordinates().left += r
+                    r = (lab_partial.right() - lab_partial.left() + 1) % 3
+                    lab_partial.coordinates().right -= r
+                else:
+                    r = (lab_partial.right() - lab.left() + 1) % 3
+                    lab_partial.coordinates().right -= r
+                    r = (lab_partial.right() - lab_partial.left() + 1) % 3
+                    lab_partial.coordinates().left += r
 
+                lab_partial.set_attribute_value("partial", "11")
+                list_labels.append(lab_partial)
+
+            elif lab.left() < chunk[0]:
+                lab_partial = copy.deepcopy(lab)
+                lab_partial.coordinates().left = chunk[0]
+                if lab.strand() == "+":
+                    r = (lab.right() - lab_partial.left() + 1) % 3
+                else:
+                    r = (lab_partial.right() - lab_partial.left() + 1) % 3
+                lab_partial.coordinates().left += r
+                if lab_partial.get_attribute_value("partial") in {"01", "11"}:
                     lab_partial.set_attribute_value("partial", "11")
-                    list_labels.append(lab_partial)
+                else:
+                    lab_partial.set_attribute_value("partial", "10")
 
-                # partial left
-                elif lab.left() < chunk[0]:
-                    lab_partial = copy.deepcopy(lab)
-                    lab_partial.coordinates().left = chunk[0]
-                    if lab.strand() == "+":
-                        r = (lab.right() - lab_partial.left() + 1) % 3
-                        lab_partial.coordinates().left += r
-                    else:
-                        r = (lab_partial.right() - lab_partial.left() + 1) % 3
-                        lab_partial.coordinates().left += r
-                    if lab_partial.get_attribute_value("partial") in {"01", "11"}:
-                        lab_partial.set_attribute_value("partial", "11")
-                    else:
-                        lab_partial.set_attribute_value("partial", "10")
+                list_labels.append(lab_partial)
+            elif lab.right() > chunk[1]:
+                lab_partial = copy.deepcopy(lab)
+                lab_partial.coordinates().right = chunk[1]
 
-                    list_labels.append(lab_partial)
-                # partial right
-                elif lab.right() > chunk[1]:
-                    lab_partial = copy.deepcopy(lab)
-                    lab_partial.coordinates().right = chunk[1]
+                if lab.strand() == "+":
+                    r = (lab_partial.right() - lab_partial.left() + 1) % 3
+                else:
+                    r = (lab_partial.right() - lab.left() + 1) % 3
+                lab_partial.coordinates().right -= r
+                if lab_partial.get_attribute_value("partial") in {"10", "11"}:
+                    lab_partial.set_attribute_value("partial", "11")
+                else:
+                    lab_partial.set_attribute_value("partial", "01")
 
-                    if lab.strand() == "+":
-                        r = (lab_partial.right() - lab_partial.left() + 1) % 3
-                        lab_partial.coordinates().right -= r
-                    else:
-                        r = (lab_partial.right() - lab.left() + 1) % 3
-                        lab_partial.coordinates().right -= r
-
-                    if lab_partial.get_attribute_value("partial") in {"10", "11"}:
-                        lab_partial.set_attribute_value("partial", "11")
-                    else:
-                        lab_partial.set_attribute_value("partial", "01")
-
-                    list_labels.append(lab_partial)
+                list_labels.append(lab_partial)
 
 
 
@@ -187,17 +181,8 @@ def apply_genome_splitter_to_labels(seqname_to_info, labels):
             left_chunk = seqname_to_interval_tree[lab.seqname()][lab.left()]
             right_chunk = seqname_to_interval_tree[lab.seqname()][lab.right()]
 
-            if len(left_chunk) == 0:
-                left_chunk = None
-            else:
-                left_chunk = left_chunk.pop().data
-
-            if len(right_chunk) == 0:
-                right_chunk = None
-            else:
-                right_chunk = right_chunk.pop().data
-
-
+            left_chunk = None if len(left_chunk) == 0 else left_chunk.pop().data
+            right_chunk = None if len(right_chunk) == 0 else right_chunk.pop().data
             if left_chunk == right_chunk:
                 # no splitting
                 list_labels.append(lab)
@@ -247,7 +232,10 @@ def stats_per_gene_on_chunks_for_genome(env, df_summary_genome, **kwargs):
 
     """
 
-    list_entries = list()
+    list_entries = []
+    # compute GC of label
+    gene_gc = 0 # compute_gc(sequences, shortest_label)
+
     for genome, df_genome in df_summary_genome.groupby("Genome", as_index=False):
 
         pf_sequence = os_join(env["pd-data"], genome, "sequence.fasta")
@@ -264,7 +252,7 @@ def stats_per_gene_on_chunks_for_genome(env, df_summary_genome, **kwargs):
             reference_tools = sorted(reference_tools)
 
         # if multiple reference, merge them first by 5
-        list_reference_labels = list()
+        list_reference_labels = []
         if reference_tools is not None:
             list_reference_labels = [read_labels_from_file(os_join(env["pd-runs"], genome, rt, "prediction.gff"),
                                                        ignore_partial=False, shift=-1)
@@ -282,7 +270,7 @@ def stats_per_gene_on_chunks_for_genome(env, df_summary_genome, **kwargs):
                     merged_reference_labels, list_reference_labels[i]
                 ).match_3p_5p("a")
 
-        for chunk_size, df_chunk in df_genome.groupby("Chunk Size", as_index=False):        # type: int, pd.DataFrame
+        for chunk_size, df_chunk in df_genome.groupby("Chunk Size", as_index=False):# type: int, pd.DataFrame
 
             # read all label files for chunk
             tool_to_labels = {
@@ -308,7 +296,7 @@ def stats_per_gene_on_chunks_for_genome(env, df_summary_genome, **kwargs):
 
             # get all possible chunks, and map reference labels to it
             chunked_reference_labels = dict()
-            if len(list_reference_labels) > 0:
+            if list_reference_labels:
                 chunked_reference_labels = {
                     ref:
                     apply_genome_splitter_to_labels(seqname_to_chunks, labels) for ref, labels in zip(
@@ -339,7 +327,7 @@ def stats_per_gene_on_chunks_for_genome(env, df_summary_genome, **kwargs):
 
 
                 shortest_label = None
-                for t in name_to_labels.keys():
+                for t in name_to_labels:
 
                     label = name_to_labels[t].get_by_3prime_key(key)
                     if label is None:
@@ -357,9 +345,6 @@ def stats_per_gene_on_chunks_for_genome(env, df_summary_genome, **kwargs):
                         entry[f"Partial5p-{t}"] = label.incomplete_at_5prime()
 
 
-
-                # compute GC of label
-                gene_gc = 0 # compute_gc(sequences, shortest_label)
 
                 list_entries.append({
                     "3p-key": key,
@@ -441,7 +426,7 @@ def main(env, args):
         df.reset_index(inplace=True)
         bs = args.batch_size
 
-        list_df = list([x[1] for x in df.groupby("Genome", as_index=False)])
+        list_df = [x[1] for x in df.groupby("Genome", as_index=False)]
 
         start = 0
         end = min(bs, len(list_df))

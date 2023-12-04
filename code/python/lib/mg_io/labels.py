@@ -4,7 +4,7 @@ import sys
 from typing import *
 from mg_general.general import get_value
 
-sys.path.append(os.path.dirname(__file__) + "/..")  # add custom library directory to path
+sys.path.append(f"{os.path.dirname(__file__)}/..")
 
 from mg_general.labels import Label, Coordinates, Labels
 
@@ -52,9 +52,7 @@ def read_labels_from_file(filename, shift=-1, name=None, **kwargs):
 
             line = line.strip()
 
-            m = pattern.match(line)
-            if m:
-
+            if m := pattern.match(line):
                 attributes = create_attribute_dict(m.group(9), key_value_delimiter=key_value_delimiter,
                                                    delimiter=attribute_delimiter)
                 attributes["score"] = m.group(6)
@@ -84,7 +82,7 @@ def read_labels_from_file(filename, shift=-1, name=None, **kwargs):
 def read_lst(pf_labels, shift=-1):
     # type: (str, int) -> Labels
 
-    labels = list()
+    labels = []
 
     # pattern = re.compile(r"([^\t]+)\t([^\t]+)\t(CDS)\t(\d+)\t(\d+)\t([^\t]+)\t([+-])\t([^\t]+)\t([^\t]+)")
     pattern = re.compile(r"([^\s]+)\s+([+-])\s+(\d+)\s+(\d+)\s+(\d+)\s+(.+)$")
@@ -111,8 +109,7 @@ def read_lst(pf_labels, shift=-1):
             elif len(line.strip()) == 0 or seqname is None:
                 continue
 
-            m = pattern.match(line)
-            if m:
+            if m := pattern.match(line):
                 attributes = m.group(6)
 
                 label = {
@@ -141,7 +138,7 @@ def read_lst(pf_labels, shift=-1):
 def read_fgs_format(pf_labels, shift=-1):
     # type: (str, int) -> Labels
 
-    labels = list()
+    labels = []
 
     # pattern = re.compile(r"([^\t]+)\t([^\t]+)\t(CDS)\t(\d+)\t(\d+)\t([^\t]+)\t([+-])\t([^\t]+)\t([^\t]+)")
     pattern = re.compile(r"\s*(\d+)\s+(\d+)\s+([+-])\s+.+$")
@@ -168,8 +165,7 @@ def read_fgs_format(pf_labels, shift=-1):
             elif len(line.strip()) == 0 or seqname is None:
                 continue
 
-            m = pattern.match(line)
-            if m:
+            if m := pattern.match(line):
                 attributes = dict()
 
                 label = {

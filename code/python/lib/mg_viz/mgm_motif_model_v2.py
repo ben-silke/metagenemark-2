@@ -171,7 +171,7 @@ class MGMMotifModelVisualizerV2:
             MGMMotifModelVisualizerV2._viz_heuristic(msa_t, ax_text)
 
 
-        plt.suptitle("Gc range: {}".format(title))
+        plt.suptitle(f"Gc range: {title}")
 
         plt.tight_layout()
         plt.subplots_adjust(top=0.9)
@@ -192,8 +192,8 @@ class MGMMotifModelVisualizerV2:
         for l, ax in zip(letters, axes):
             # for each position in motif
             # go through df and accumulate values
-            all_positions = list()
-            all_probs = list()
+            all_positions = []
+            all_probs = []
             for w_pos in range(array.shape[1]):
 
                 # go through all motifs at current position

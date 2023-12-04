@@ -67,12 +67,13 @@ def stats_per_gene_for_gi(env, gi, tools, **kwargs):
         if os.path.isfile(os_join(env["pd-runs"], gi.name, tools[t], "prediction.gff"))
     }
 
-    if len(pf_predictions) == 0:
+    if not pf_predictions:
         return pd.DataFrame()
 
     name_to_labels = {
-        t: read_labels_from_file(pf_predictions[t], shift=-1, name=t) for t in pf_predictions.keys()
-    }  # type: Dict[str, Labels]
+        t: read_labels_from_file(pf_predictions[t], shift=-1, name=t)
+        for t in pf_predictions
+    }
 
     keys_3prime = get_unique_gene_keys(*name_to_labels.values())
 
@@ -86,13 +87,13 @@ def stats_per_gene_for_gi(env, gi, tools, **kwargs):
 
     # Each gene key will have a row in the dataframe
     # Columns will indicate whether it was 3p and 5p were predicted by each tool
-    list_entries = list()
+    list_entries = []
     for key in keys_3prime:
         entry = dict()
 
         shortest_label = None
         tool_of = None
-        for t in pf_predictions.keys():
+        for t in pf_predictions:
 
             label = name_to_labels[t].get_by_3prime_key(key)
             if label is None:
@@ -124,11 +125,7 @@ def stats_per_gene_for_gi(env, gi, tools, **kwargs):
             **entry
         })
 
-    df = pd.DataFrame(list_entries)
-    # for t in tools.keys():
-    #     df[f"5p-{t}"] = df[f"5p-{t}"].astype(int)
-
-    return df
+    return pd.DataFrame(list_entries)
 
 
 def helper_stats_per_gene(env, gil, tools, **kwargs):
@@ -143,14 +140,12 @@ def helper_stats_per_gene(env, gil, tools, **kwargs):
     :return: Either nothing or the dataframe, depending on the value of suppress_return.
     """
 
-    list_df = list()
-    for gi in gil:
-        list_df.append(stats_per_gene_for_gi(env, gi, tools, **kwargs))
-
-    if len(list_df) == 0:
+    if list_df := [
+        stats_per_gene_for_gi(env, gi, tools, **kwargs) for gi in gil
+    ]:
+        return pd.concat(list_df, ignore_index=True, sort=False)
+    else:
         return pd.DataFrame()
-
-    return pd.concat(list_df, ignore_index=True, sort=False)
 
 
 def stats_per_gene(env, gil, tools, pf_output, **kwargs):
@@ -171,9 +166,6 @@ def stats_per_gene(env, gil, tools, pf_output, **kwargs):
                     "env": env, "tools": tools, **kwargs
                 }
             )
-            df = pd.concat(list_df, ignore_index=True, sort=False)
-
-        # threading
         else:
             list_df = run_n_per_thread(
                 list(gil), stats_per_gene_for_gi,
@@ -184,7 +176,7 @@ def stats_per_gene(env, gil, tools, pf_output, **kwargs):
                 simultaneous_runs=1 #prl_options.safe_get("num-processors")
             )
 
-            df = pd.concat(list_df, ignore_index=True, sort=False)
+        df = pd.concat(list_df, ignore_index=True, sort=False)
 
     df.to_csv(pf_output, index=False)
 
@@ -204,7 +196,7 @@ def main(env, args):
     prl_options = ParallelizationOptions(env, args.pf_parallelization_options, **vars(args))
 
     # collect tool name and directory together
-    tool_to_dir = {a: b for a, b in zip(tools, dn_tools)}
+    tool_to_dir = dict(zip(tools, dn_tools))
 
     stats_per_gene(env, gil, tool_to_dir, args.pf_output, prl_options=prl_options)
 

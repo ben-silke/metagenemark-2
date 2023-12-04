@@ -106,7 +106,7 @@ def test_start_codon_perturbation_for_gi(env, gi, p, gms2_mod):
     }
 
 def run_perturbations(env, gi, perturbations, gms2_mod):
-    list_entries = list()
+    list_entries = []
 
     for p in tqdm(perturbations, f"{gi.name}", leave=False, total=len(perturbations)):
         entry = test_start_codon_perturbation_for_gi(env, gi, p, gms2_mod)
@@ -130,43 +130,35 @@ def test_start_codon_perturbations_for_gi(env, gi, **kwargs):
     # sample perturbations
     perturbations = np.random.normal(alpha_mean, alpha_std, num_perturbations)
 
-    list_entries = list()
+    list_entries = []
 
     # for p in tqdm(perturbations, f"{gi.name}", leave=False, total=len(perturbations)):
     #     entry = test_start_codon_perturbation_for_gi(env, gi, p, gms2_mod)
     #     list_entries.append(entry)
 
     list_entries = run_n_per_thread(
-        [x for x in perturbations],
+        list(perturbations),
         test_start_codon_perturbation_for_gi,
         "p",
-        {"gi": gi, "env": env, "gms2_mod": gms2_mod}
+        {"gi": gi, "env": env, "gms2_mod": gms2_mod},
     )
 
     return pd.DataFrame(list_entries)
 
 
 def test_start_codon_perturbations(env, gil, **kwargs):
-    # type: (Environment, GenomeInfoList, Dict[str, Any]) -> None
+    if from_existing := get_value(kwargs, "from_existing", False):
+        df = pd.read_csv(os_join(env["pd-work"], "summary.csv"))
 
-    from_existing = get_value(kwargs, "from_existing", False)
-
-    if not from_existing:
-        list_df = list()
-        counter = 0
-        for gi in tqdm(gil, "Genomes", total=len(gil)):
-            list_df.append(test_start_codon_perturbations_for_gi(env, gi, **kwargs))
-            counter += 1
-            # if counter == 2:
-            #     break
-
+    else:
+        list_df = [
+            test_start_codon_perturbations_for_gi(env, gi, **kwargs)
+            for gi in tqdm(gil, "Genomes", total=len(gil))
+        ]
         df = pd.concat(list_df, ignore_index=True, sort=False)
 
         df["Genome"] = df.apply(fix_names, axis=1)
         df.to_csv(os_join(env["pd-work"], "summary.csv"), index=False)
-    else:
-        df = pd.read_csv(os_join(env["pd-work"], "summary.csv"))
-
     sns.catplot(df, "Genome", "Error")
     sns.lmplot(df, "Perturbation", "Error", hue="Genome", sns_kwargs={"lowess": True})
 

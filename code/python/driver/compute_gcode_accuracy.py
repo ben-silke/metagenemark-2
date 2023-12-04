@@ -81,9 +81,7 @@ def get_gcode_per_contig_for_mgm2(pf_prediction):
         for line in f:
             line = line.strip()
             if "seqid" in line and "genetic code" in line:
-                m = pattern.match(line)
-
-                if m:
+                if m := pattern.match(line):
                     gcode = str(m.group(2))
                     gcode_per_contig[str(contig)] = gcode
                     contig += 1
@@ -101,9 +99,7 @@ def get_gcode_per_contig_for_mprodigal(pf_prediction):
         for line in f:
             line = line.strip()
             if "Model Data" in line:
-                m = pattern.match(line)
-
-                if m:
+                if m := pattern.match(line):
                     gcode = str(m.group(1))
                     gcode_per_contig[str(contig)] = gcode
                     contig += 1
@@ -116,13 +112,15 @@ def get_accuracy_gcode_predicted(tool, pf_prediction, gcode_true):
 
     if tool == "mgm2":
         gcode_per_contig = get_gcode_per_contig_for_mgm2(pf_prediction)
-    elif tool == "mprodigal" or tool == "prodigal":
+    elif tool in ["mprodigal", "prodigal"]:
         gcode_per_contig = get_gcode_per_contig_for_mprodigal(pf_prediction)
     else:
         raise ValueError("Unknown tool")
 
-    num_matches = sum([1 for v in gcode_per_contig.values() if str(v) == gcode_true])
-    num_mismatches = sum([1 for v in gcode_per_contig.values() if str(v) != gcode_true])
+    num_matches = sum(1 for v in gcode_per_contig.values() if str(v) == gcode_true)
+    num_mismatches = sum(
+        1 for v in gcode_per_contig.values() if str(v) != gcode_true
+    )
 
     total = len(gcode_per_contig)
 
@@ -146,7 +144,7 @@ def compute_gcode_accuracy_for_tool_on_sequence(env, tool, pf_sequences, pf_pred
         run_tool(env, pf_sequences, pf_prediction, tool + "_autogcode", **kwargs)
 
 
-    list_entries = list()
+    list_entries = []
     if tool == "mgm2" and pf_summary:
         data = pd.read_csv(pf_summary)
 
@@ -195,7 +193,7 @@ def compute_gcode_accuracy_for_tools_on_chunk_deprecated(env, gi, tools, chunk, 
     pf_chunks = mkstemp_closed(dir=env["pd-work"], suffix=".fasta")
     gs.write_to_file(pf_chunks)
 
-    list_entries = list()
+    list_entries = []
 
     ran_prod = False
 
@@ -249,7 +247,7 @@ def compute_gcode_accuracy_for_tools_on_chunk(env, gi, tools, chunk, **kwargs):
     pf_chunks = mkstemp_closed(dir=env["pd-work"], suffix=".fasta")
     gs.write_to_file(pf_chunks)
 
-    list_df = list()
+    list_df = []
 
     for t, dn in zip(tools, dn_tools):
         pd_run = os_join(env["pd-work"], gi.name, f"{dn_prefix}{dn}_{chunk}")
@@ -307,7 +305,7 @@ def compute_gcode_accuracy_for_tools_on_chunk(env, gi, tools, chunk, **kwargs):
 
 def compute_gcode_accuracy_for_gi(env, gi, tools, chunks, **kwargs):
     # type: (Environment, GenomeInfo, List[str], List[int], Dict[str, Any]) -> pd.DataFrame
-    list_df = list()
+    list_df = []
     num_processors = get_value(kwargs, "num_processors", 1, valid_type=int)
 
     if num_processors > 1:
@@ -320,7 +318,7 @@ def compute_gcode_accuracy_for_gi(env, gi, tools, chunks, **kwargs):
 
     else:
 
-        list_df = list()
+        list_df = []
         for chunk in chunks:
             logger.debug(f"{gi.name};{chunk}")
             curr = compute_gcode_accuracy_for_tools_on_chunk(env, gi, tools, chunk, **kwargs)
@@ -330,14 +328,10 @@ def compute_gcode_accuracy_for_gi(env, gi, tools, chunks, **kwargs):
 
 
 def compute_gcode_accuracy(env, gil, tools, chunks, **kwargs):
-    # type: (Environment, GenomeInfoList, List[str], List[int], Dict[str, Any]) -> pd.DataFrame
-    list_df = list()
-
-    for gi in gil:
-        list_df.append(
-            compute_gcode_accuracy_for_gi(env, gi, tools, chunks, **kwargs)
-        )
-
+    list_df = [
+        compute_gcode_accuracy_for_gi(env, gi, tools, chunks, **kwargs)
+        for gi in gil
+    ]
     return pd.concat(list_df, ignore_index=True, sort=False)
 
 

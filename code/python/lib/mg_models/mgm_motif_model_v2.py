@@ -32,7 +32,7 @@ class MGMMotifModelV2(MotifModel):
 
         all_shifts = set(self._shift_prior.keys()).union(self._motif.keys()).union(self._spacer.keys())
 
-        spacer_len = max([len(self._spacer[a]) for a in self._spacer.keys()])
+        spacer_len = max(len(self._spacer[a]) for a in self._spacer.keys())
 
         for s in all_shifts:
             if s not in self._shift_prior:
@@ -61,7 +61,7 @@ class MGMMotifModelV2(MotifModel):
         if begin is None:
             begin = 0
 
-        score_per_shift = list()
+        score_per_shift = []
         for s in self._shift_prior:
             s = int(s)
             # shift prior
@@ -77,11 +77,10 @@ class MGMMotifModelV2(MotifModel):
                             score += 0.25
                         else:
                             score *= 0.25
+                    elif use_log:
+                        score += math.log(self._motif[s][fragment[begin + i]][i])
                     else:
-                        if use_log:
-                            score += math.log(self._motif[s][fragment[begin + i]][i])
-                        else:
-                            score *= self._motif[s][fragment[begin + i]][i]
+                        score *= self._motif[s][fragment[begin + i]][i]
 
             # spacer
             if component != "motif":
@@ -121,7 +120,7 @@ class MGMMotifModelV2(MotifModel):
             if isinstance(spacer[shift], dict):
                 if len(spacer[shift].keys()) == 0:
                     continue
-                max_position = max([int(x) for x in spacer[shift].keys()])
+                max_position = max(int(x) for x in spacer[shift].keys())
                 result = [0] * (max_position + 1)
                 for i in spacer[shift].keys():
                     result[int(i)] = spacer[shift][i]
@@ -142,12 +141,10 @@ class MGMMotifModelV2(MotifModel):
 
         keys = sorted(self._motif[shift].keys())
 
-        list_entries = list()
-        for p in range(len(next(iter(self._motif[shift].values())))):
-            list_entries.append(
-                [self._motif[shift][k][p] for k in keys]
-            )
-
+        list_entries = [
+            [self._motif[shift][k][p] for k in keys]
+            for p in range(len(next(iter(self._motif[shift].values()))))
+        ]
         return pd.DataFrame(list_entries, columns=keys)
 
 

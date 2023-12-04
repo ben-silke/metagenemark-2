@@ -101,10 +101,7 @@ def compare_for_gi(env, gi, **kwargs):
 
 def compare_for_gil(env, gil, **kwargs):
 
-    list_df = list()
-    for gi in gil:
-        list_df.append(compare_for_gi(env, gi, **kwargs))
-
+    list_df = [compare_for_gi(env, gi, **kwargs) for gi in gil]
     return pd.concat(list_df, ignore_index=True, sort=False)
 
 
@@ -154,10 +151,10 @@ def main(env, args):
 
         if not prl_options["use-pbs"]:
             df_list = run_n_per_thread(
-                [g for g in gil],
+                list(gil),
                 compare_for_gi,
                 data_arg_name="gi",
-                func_kwargs={"env": env}
+                func_kwargs={"env": env},
             )
         else:
             pbs = PBS(env, prl_options,

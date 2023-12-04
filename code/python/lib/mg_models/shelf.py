@@ -34,7 +34,7 @@ def bin_by_gc(df, step=1, **kwargs):
     gc_feature = get_value(kwargs, "gc_feature", "GC", valid_type=str)
 
     gc_ranges = range(30, 71, step)
-    result = list()
+    result = []
     a = 0
     for b in gc_ranges:
         right = b if b != gc_ranges[-1] else 100
@@ -56,13 +56,13 @@ def get_consensus_sequence(dict_mat):
         best_val = None
 
         for letter in dict_mat.keys():
-            if best_letter is None:
+            if (
+                best_letter is not None
+                and dict_mat[letter][n] > best_val
+                or best_letter is None
+            ):
                 best_letter = letter
                 best_val = dict_mat[letter][n]
-            else:
-                if dict_mat[letter][n] > best_val:
-                    best_letter = letter
-                    best_val = dict_mat[letter][n]
 
         out += best_letter
 
@@ -78,7 +78,7 @@ def get_position_distributions_by_shift(df, col, shifts):
         s = shifts[n]
 
         if s not in result:
-            result[s] = list()
+            result[s] = []
 
         result[s].append(df.at[idx, "Mod"].items[col])
 
@@ -100,13 +100,13 @@ def sort_sequences_by_first_non_gap_and_consensus(list_seqs):
     for l in list_seqs:
         p = first_non_gap(l)
         if p not in pos_to_list_seqs.keys():
-            pos_to_list_seqs[p] = list()
+            pos_to_list_seqs[p] = []
 
         pos_to_list_seqs[p].append(l)
 
     # reappend into single list and sort per position
-    output = list()
-    output_counts = list()
+    output = []
+    output_counts = []
     for p in sorted(pos_to_list_seqs.keys()):
         # get counts per item
         counter = Counter(pos_to_list_seqs[p])
@@ -129,7 +129,7 @@ def print_reduced_msa(msa_t, sort_by_starting_position=False, n=None):
     out = ""
     counter = 0
     for s, c in zip(list_sequences, counts):
-        out += "{}    {}\n".format(s, c)
+        out += f"{s}    {c}\n"
 
         if n is not None and counter >= n:
             break
@@ -167,7 +167,7 @@ def run_msa_on_sequence_file(pf_fasta, pf_msa, **kwargs):
     num_processors = get_value(kwargs, "num_processors", None)
     output_order = get_value(kwargs, "outputorder", "input-order")
 
-    log.debug("Number of processors for MSA: {}".format(num_processors))
+    log.debug(f"Number of processors for MSA: {num_processors}")
     other_options = dict()
     if num_processors is not None:
         other_options["threads"] = num_processors
@@ -190,12 +190,12 @@ def run_msa_on_sequences(env, sequences, **kwargs):
     fn_tmp_prefix = get_value(kwargs, "fn_tmp_prefix", "", default_if_none=True)
 
     # write sequences to file
-    pf_fasta = os_join(pd_work, "{}tmp_sequences.fasta".format(fn_tmp_prefix))
+    pf_fasta = os_join(pd_work, f"{fn_tmp_prefix}tmp_sequences.fasta")
     remove_p(pf_fasta)
     write_sequence_list_to_fasta_file(sequences, pf_fasta)
 
     # run msa
-    pf_msa = os_join(pd_work, "{}tmp_msa.txt".format(fn_tmp_prefix))
+    pf_msa = os_join(pd_work, f"{fn_tmp_prefix}tmp_msa.txt")
     run_msa_on_sequence_file(pf_fasta, pf_msa, **kwargs)
 
     msa_t = MSAType.init_from_file(pf_msa)
@@ -208,7 +208,7 @@ def run_msa_on_sequences(env, sequences, **kwargs):
 def gather_consensus_sequences(env, df, col):
     # type: (Environment, pd.DataFrame, str) -> List[str]
 
-    sequences = list()
+    sequences = []
 
     for idx in df.index:
         d = df.at[idx, "Mod"].items[col]  # type: Dict[str, List[float]]
@@ -220,13 +220,13 @@ def gather_consensus_sequences(env, df, col):
             best_val = None
 
             for letter in d.keys():
-                if best_letter is None:
+                if (
+                    best_letter is not None
+                    and d[letter][n] > best_val
+                    or best_letter is None
+                ):
                     best_letter = letter
                     best_val = d[letter][n]
-                else:
-                    if d[letter][n] > best_val:
-                        best_letter = letter
-                        best_val = d[letter][n]
 
             out += best_letter
         sequences.append(out)
@@ -248,13 +248,9 @@ def create_numpy_for_column_with_extended_motif(env, df, col, other=dict()):
     other["msa_t"] = msa_t
 
     # get position of shift
-    shifts = list()
+    shifts = []
     for s in msa_t.list_alignment_sequences:
-        p = 0
-        for pos in range(len(s)):
-            if s[pos] != "-":
-                p = pos
-                break
+        p = next((pos for pos in range(len(s)) if s[pos] != "-"), 0)
         shifts.append(p)
 
     msa_t = run_msa_on_sequences(env, consensus_seqs, outputorder="tree-order")
@@ -377,8 +373,10 @@ def turn_off_components(pf_mod_original, pf_new_mod, components_off, native_codi
                         mod_string = clean_up_start_context(mod_string, t, delete_sc)
 
         if native_coding_off:
-            mod_string = re.sub(r"\$TO_NATIVE" + r"\s+\d+\.\d+", f"$TO_NATIVE 0.0", mod_string)
-            mod_string = re.sub(r"\$TO_MGM" + r"\s+\d+\.\d+", f"$TO_MGM 1.0", mod_string)
+            mod_string = re.sub(
+                r"\$TO_NATIVE" + r"\s+\d+\.\d+", "$TO_NATIVE 0.0", mod_string
+            )
+            mod_string = re.sub(r"\$TO_MGM" + r"\s+\d+\.\d+", "$TO_MGM 1.0", mod_string)
 
         with open(pf_new_mod, "w") as f_out:
             f_out.write(mod_string)
@@ -432,10 +430,10 @@ def component_in_model_file(env, gi, component):
     with open(pf_mod, "r") as f:
         mod_string = f.read()
 
-        for t in key_to_gms2_tags(component):
-            if re.findall(r"\$" + t + r"[\s\n]", mod_string):
-                return True
-        return False
+        return any(
+            re.findall(r"\$" + t + r"[\s\n]", mod_string)
+            for t in key_to_gms2_tags(component)
+        )
 
 
 def run_mgm(env, pf_sequence, pf_mgm, pf_prediction, **kwargs):
@@ -474,7 +472,7 @@ def run_fgs(env, pf_sequence, pf_prediction, **kwargs):
     # prog=f"eval \"$(docker-machine env default)\"; docker run -v {env['pd-base']}:{env['pd-base']}  quay.io/biocontainers/fraggenescan:1.31--h516909a_2 " \
     #      f"run_FragGeneScan.pl -genome={pf_sequence} -complete=0" \
     #      f" -out={pf_prediction} -train=illumina_10"
-    pf_mod = f"complete"
+    pf_mod = "complete"
     cmd = f"{prog} -s {pf_sequence} -o {pf_prediction} -w 1 -t complete"
 
     log.info(cmd)
@@ -512,7 +510,7 @@ def convert_mga_output_to_gff(output_str, pf_output):
                         end -= frame
 
                 # if stop is partial, check if should be shifted
-                if partial == "10" or partial == "00":
+                if partial in ["10", "00"]:
                     gene_length = end - start + 1
                     rem = gene_length % 3
                     if rem > 0:
@@ -551,7 +549,7 @@ def convert_mga_output_to_gff(output_str, pf_output):
 
 def run_mga(env, pf_sequence, pf_prediction, **kwargs):
     # type: (Environment, str, str) -> None
-    prog = f"mga"
+    prog = "mga"
     cmd = f"{prog} -m {pf_sequence}"
     output = run_shell_cmd(cmd)
     convert_mga_output_to_gff(output, pf_prediction)
@@ -606,9 +604,7 @@ def run_prodigal(env, pf_sequence, pf_prediction, **kwargs):
     pe_tool = os_join(env["pd-bin-external"], "prodigal", "prodigal")
 
     cmd_run = f"cd {env['pd-work']};\n"
-    cmd_run += "{}  -i {}  -g {}  -o {}  -f gff  -q \n".format(
-        pe_tool, pf_sequence, gcode, pf_prediction
-    )
+    cmd_run += f"{pe_tool}  -i {pf_sequence}  -g {gcode}  -o {pf_prediction}  -f gff  -q \n"
 
     run_shell_cmd(cmd_run)
 
@@ -621,9 +617,7 @@ def run_meta_prodigal(env, pf_sequence, pf_prediction, **kwargs):
     pe_tool = os_join(env["pd-bin-external"], "prodigal", "prodigal")
 
     cmd_run = f"cd {env['pd-work']};\n"
-    cmd_run += "{}  -i {}  -g {}  -o {}  -f gff  -q -p meta \n".format(
-        pe_tool, pf_sequence, gcode, pf_prediction
-    )
+    cmd_run += f"{pe_tool}  -i {pf_sequence}  -g {gcode}  -o {pf_prediction}  -f gff  -q -p meta \n"
 
     run_shell_cmd(cmd_run)
 
@@ -633,9 +627,7 @@ def run_meta_prodigal_autogcode(env, pf_sequence, pf_prediction, **kwargs):
     pe_tool = os_join(env["pd-bin-external"], "prodigal", "prodigal")
 
     cmd_run = f"cd {env['pd-work']};\n"
-    cmd_run += "{}  -i {}   -o {}  -f gff  -q -p meta \n".format(
-        pe_tool, pf_sequence, pf_prediction
-    )
+    cmd_run += f"{pe_tool}  -i {pf_sequence}   -o {pf_prediction}  -f gff  -q -p meta \n"
 
     run_shell_cmd(cmd_run)
 
@@ -700,9 +692,7 @@ def train_gms2_model(env, pf_new_seq, pf_labels_lst, pf_mod, **kwargs):
     run_shell_cmd(
         cmd
     )
-    mod = GMS2Mod.init_from_file(pf_mod)
-
-    return mod
+    return GMS2Mod.init_from_file(pf_mod)
 
 
 def relative_entropy(motif, background, component=None):
@@ -736,11 +726,10 @@ def run_mgm2_autogcode(env, pf_sequence, pf_prediction, **kwargs):
     p4 = get_value(kwargs, "p4", 10)
     p11 = get_value(kwargs, "p11", 20)
 
-    pf_summary = get_value(kwargs, "pf_summary", None)
-    opt = ""
-    if pf_summary:
+    if pf_summary := get_value(kwargs, "pf_summary", None):
         opt = f" --pf-summary {pf_summary} "
-
+    else:
+        opt = ""
     cmd = f"{prog} --seq {pf_sequence} --out {pf_prediction} --clean --p4 {p4} --p11 {p11} {opt}"
     run_shell_cmd(cmd)
 
@@ -776,7 +765,7 @@ def count_mismatches(s1, s2):
     # type: (str, str) -> int
     assert(len(s1) == len(s2))
 
-    return sum([1 for i in range(len(s1)) if s1[i] != s2[i]])
+    return sum(1 for i in range(len(s1)) if s1[i] != s2[i])
 
 
 def helper_clusters_by_heuristic(env, df):
@@ -785,15 +774,17 @@ def helper_clusters_by_heuristic(env, df):
     clusters = [0] * len(seqs)
 
     freqs = df["CONSENSUS_RBS_MAT"].value_counts().to_dict()
-    unique_seqs_ordered = [s for s in sorted(freqs.keys(), key=lambda item: item[1], reverse=True)]
+    unique_seqs_ordered = list(
+        sorted(freqs.keys(), key=lambda item: item[1], reverse=True)
+    )
 
 
     seq_to_cluster = dict()
     cluster_to_seqs = dict()        # type: (Dict[int, List[str]])
 
     cluster_id = 0
-    for i in range(len(unique_seqs_ordered)):
-        s = unique_seqs_ordered[i]
+    for item in unique_seqs_ordered:
+        s = item
 
         # try and find an existing cluster
         found_id = None

@@ -99,17 +99,11 @@ class PBS:
         )
 
 
-        # 4) Merge end-results
-        data_output = None
-        if not self._dry_run:
-            data_output = self.merge_output_package_files(list_pf_output_job_packages)
-
-        # 5) Clean
-        #if self._prl_options.safe_get("pbs-clean"):
-            #remove_p(*list_pf_input_job)
-        #    remove_p(*list_pf_output_job_packages)
-
-        return data_output
+        return (
+            self.merge_output_package_files(list_pf_output_job_packages)
+            if not self._dry_run
+            else None
+        )
 
     def run_on_generator(self, gen_data, func, func_kwargs, **kwargs):
         # type: (Generator, Callable, Dict[str, Any], Dict[str, Any]) -> Any
@@ -151,19 +145,13 @@ class PBS:
         merge_kwargs = get_value(kwargs, "merge_kwargs", dict())
 
 
-        # 4) Merge end-results
-
-        data_output = None
-        if not self._dry_run:
-            data_output = self.merge_output_package_files(list_pf_output_job_packages, as_generator=True,
-                                                          **merge_kwargs)
-
-        # 5) Clean
-        #if self._prl_options.safe_get("pbs-clean"):
-            #remove_p(*[f"{x}.pkl" for x in list_pf_input_job])
-        #    remove_p(*[f"{x}.pkl" for x in list_pf_output_job_packages])
-
-        return data_output
+        return (
+            self.merge_output_package_files(
+                list_pf_output_job_packages, as_generator=True, **merge_kwargs
+            )
+            if not self._dry_run
+            else None
+        )
 
 
     def create_input_package_files(self, data, func, func_kwargs, num_splits, **kwargs):
@@ -202,12 +190,9 @@ class PBS:
             for d in list_split_data:
                 split_collector.append(d)
 
-        # Write package to disk
-        list_pf_data = self._package_and_save_list_data(list_split_data, func, func_kwargs,
-                                                        pf_package_template_formatted)
-
-        # return list of filenames
-        return list_pf_data
+        return self._package_and_save_list_data(
+            list_split_data, func, func_kwargs, pf_package_template_formatted
+        )
 
     def create_input_package_files_from_generator(self, data, func, func_kwargs, num_splits, **kwargs):
         # type: (Dict, Callable, Dict[str, Any], int, Dict[str, Any]) -> List[str]
@@ -237,16 +222,9 @@ class PBS:
             kwargs, "pf_package_template_formatted", os.path.join(pd_work_pbs, "input_package_{}")
         )
 
-        # Split data
-        # list_split_data = self._splitter(data, num_splits, **split_kwargs)
-
-        # Write package to disk
-        list_pf_data = self._package_and_save_list_data_from_generator(
+        return self._package_and_save_list_data_from_generator(
             data, func, func_kwargs, pf_package_template_formatted, **split_kwargs
         )
-
-        # return list of filenames
-        return list_pf_data
 
     def execute_function_on_input_packages(self, pf_input_package_template_formatted, job_name, num_jobs):
         # type: (str, str, int) -> List[str]
@@ -265,7 +243,7 @@ class PBS:
         pf_input_package_template = pf_input_package_template_formatted.format("${PBS_ARRAYID}")
 
         # create pbs file
-        pf_output_package_template = "{}_output".format(pf_input_package_template)
+        pf_output_package_template = f"{pf_input_package_template}_output"
         self._create_pbs_file(job_name, num_jobs, pf_pbs, pf_input_package_template, pf_output_package_template)
 
         # run
@@ -275,12 +253,15 @@ class PBS:
             # wait for jobs to end
             self._wait_for_job_array(array_job_name, pd_head)
 
-        # collect all output files
-        list_pf_outputs = []
-        for x in range(1, num_jobs + 1):
-            if os.path.isfile(PBS.create_concrete_from_template(pf_output_package_template + ".pkl", x)):
-                list_pf_outputs.append(PBS.create_concrete_from_template(pf_output_package_template, x))
-
+        list_pf_outputs = [
+            PBS.create_concrete_from_template(pf_output_package_template, x)
+            for x in range(1, num_jobs + 1)
+            if os.path.isfile(
+                PBS.create_concrete_from_template(
+                    f"{pf_output_package_template}.pkl", x
+                )
+            )
+        ]
         # write summary file
         pf_pbs_summary = os.path.join(self._prl_options["pbs-pd-head"], self._prl_options["pbs-fn-summary"])
         write_to_file("\n".join(list_pf_outputs), pf_pbs_summary)
@@ -290,7 +271,7 @@ class PBS:
     @staticmethod
     def _qsub(pf_pbs):
         # type: (str) -> str
-        return run_shell_cmd("qsub  -V " + pf_pbs, do_not_log=True).strip()
+        return run_shell_cmd(f"qsub  -V {pf_pbs}", do_not_log=True).strip()
 
     def _read_data_from_output_packages(self, list_pf_output_packages, as_generator=False):
 
@@ -312,12 +293,9 @@ class PBS:
         list_output_data = self._read_data_from_output_packages(list_pf_output_packages, as_generator)
 
         if not as_generator:
-            list_output_data = [x for x in list_output_data]
+            list_output_data = list(list_output_data)
 
-        # 4-a) Merge data while loading packages one by one
-        data_output = self._merger(list_output_data, **kwargs)
-
-        return data_output
+        return self._merger(list_output_data, **kwargs)
 
     def _package_and_save_data(self, data, func, func_kwargs, pf_package):
         # type: (Dict[str, Any], Callable, Dict[str, Any], str) -> None
@@ -335,16 +313,12 @@ class PBS:
     def _package_and_save_list_data(self, list_data, func, func_kwargs, pf_package_template_formatted):
         # type: (List[Dict[str, Any]], Callable, Dict[str, Any], str) -> List[str]
 
-        list_pf = list()
-        file_number = 1
-
-        for data in list_data:
+        list_pf = []
+        for file_number, data in enumerate(list_data, start=1):
             pf_save = pf_package_template_formatted.format(file_number)
 
             self._package_and_save_data(data, func, func_kwargs, pf_save)
             list_pf.append(pf_save)
-
-            file_number += 1
 
         return list_pf
 
@@ -353,16 +327,12 @@ class PBS:
         # type: (Generator, Callable, Dict[str, Any], str, Dict[str, Any]) -> List[str]
         arg_name_data = get_value(kwargs, "arg_name_data", "data")
 
-        list_pf = list()
-        file_number = 1
-
-        for data in gen_data:
+        list_pf = []
+        for file_number, data in enumerate(gen_data, start=1):
             pf_save = pf_package_template_formatted.format(file_number)
 
             self._package_and_save_data({arg_name_data: data}, func, func_kwargs, pf_save)
             list_pf.append(pf_save)
-
-            file_number += 1
 
         return list_pf
 
@@ -401,15 +371,7 @@ class PBS:
         pd_compute = os.path.abspath(os.path.join(prl_options["pbs-pd-root-compute"], prl_options["pbs-dn-compute"]))
         pd_job_template = os.path.join(pd_compute, "job_${PBS_ARRAYID}")
 
-        cmd = "{} --pf-job-input {} --pf-job-output {} --pd-work {} -l {}".format(
-            "python {}".format(os.path.join(env["pd-code"], "python/driver", "run-pbs-job.py")),
-            pf_job_input,
-            pf_job_output,
-            pd_job_template,
-            "DEBUG" # log.level
-        )
-
-        return cmd
+        return f'python {os.path.join(env["pd-code"], "python/driver", "run-pbs-job.py")} --pf-job-input {pf_job_input} --pf-job-output {pf_job_output} --pd-work {pd_job_template} -l DEBUG'
 
     @staticmethod
     def create_concrete_from_template(pf_template, file_number):
@@ -463,15 +425,15 @@ class PBS:
     def generate_pbs_header(job_name, working_dir=".", num_nodes=1, ppn=1, walltime="00:30:00"):
         pbs_text = ""
 
-        pbs_text += "#PBS -N " + str(job_name) + "\n"
-        pbs_text += "#PBS -o " + str(working_dir) + "\n"
+        pbs_text += f"#PBS -N {str(job_name)}" + "\n"
+        pbs_text += f"#PBS -o {str(working_dir)}" + "\n"
         pbs_text += "#PBS -j oe" + "\n"
-        pbs_text += "#PBS -l nodes=" + str(num_nodes) + ":ppn=" + str(ppn) + "\n"
-        pbs_text += "#PBS -l walltime=" + str(walltime) + "\n"
+        pbs_text += f"#PBS -l nodes={str(num_nodes)}:ppn={str(ppn)}" + "\n"
+        pbs_text += f"#PBS -l walltime={str(walltime)}" + "\n"
 
         pbs_text += "#PBS -W umask=002" + "\n"
 
-        pbs_text += "set PBS_O_WORKDIR = " + str(working_dir) + "\n"
+        pbs_text += f"set PBS_O_WORKDIR = {str(working_dir)}" + "\n"
         pbs_text += "cd $PBS_O_WORKDIR \n"
 
         pbs_text += "echo The working directory is `echo $PBS_O_WORKDIR`" + "\n"
@@ -503,34 +465,32 @@ class PBS:
         mkdir_p(pd_pbs_logs)
 
         node_property = prl_options.safe_get("pbs-node-property")
-        if node_property is not None:
-            node_property = ":" + node_property
-        else:
-            node_property = ""
-
+        node_property = f":{node_property}" if node_property is not None else ""
         pbs_text = ""
 
-        pbs_text += "#PBS -N " + str(job_name) + "\n"
+        pbs_text += f"#PBS -N {str(job_name)}" + "\n"
         pbs_text += "#PBS -o " + "{}/{}".format(pd_pbs_logs, "error_${PBS_ARRAYID}") + "\n"
         pbs_text += "#PBS -j oe" + "\n"
-        pbs_text += "#PBS -l nodes=" + str(num_nodes) + ":ppn=" + str(ppn) + "{}\n".format(node_property)
-        pbs_text += "#PBS -l walltime=" + str(walltime) + "\n"
+        pbs_text += (
+            f"#PBS -l nodes={str(num_nodes)}:ppn={str(ppn)}" + f"{node_property}\n"
+        )
+        pbs_text += f"#PBS -l walltime={str(walltime)}" + "\n"
 
         if prl_options:
-            array_param = "1-{}".format(num_jobs)
+            array_param = f"1-{num_jobs}"
             if prl_options["pbs-concurrent-nodes"]:
                 total_concurrent_jobs = prl_options["pbs-concurrent-nodes"] * int(8 / ppn)
-                array_param = "{}%{}".format(array_param, total_concurrent_jobs)
+                array_param = f"{array_param}%{total_concurrent_jobs}"
 
-            pbs_text += "#PBS -t {}".format(array_param) + "\n"
+            pbs_text += f"#PBS -t {array_param}" + "\n"
 
         pbs_text += "#PBS -W umask=002" + "\n"
 
         #pbs_text += "export PATH=\"/home/karl/anaconda/envs/biogem_sbsp/bin:$PATH\"\n"
 
-        pbs_text += "mkdir -p {}".format(pd_job_template) + "\n"
+        pbs_text += f"mkdir -p {pd_job_template}" + "\n"
 
-        pbs_text += "PBS_O_WORKDIR=" + pd_job_template + "\n"
+        pbs_text += f"PBS_O_WORKDIR={pd_job_template}" + "\n"
         pbs_text += "cd $PBS_O_WORKDIR \n"
         pbs_text += "sleep 10\n"
 

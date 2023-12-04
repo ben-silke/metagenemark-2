@@ -39,7 +39,7 @@ class MGMMotifModel(MotifModel):
         if begin is None:
             begin = 0
 
-        score_per_shift = list()
+        score_per_shift = []
         for s in self._shift_prior:
             s = int(s)
             # shift prior
@@ -55,11 +55,10 @@ class MGMMotifModel(MotifModel):
                             score += 0.25
                         else:
                             score *= 0.25
+                    elif use_log:
+                        score += math.log(self._motif[fragment[begin + i]][s + i])
                     else:
-                        if use_log:
-                            score += math.log(self._motif[fragment[begin + i]][s + i])
-                        else:
-                            score *= self._motif[fragment[begin + i]][s + i]
+                        score *= self._motif[fragment[begin + i]][s + i]
 
             # spacer
             if component != "motif":
@@ -99,7 +98,7 @@ class MGMMotifModel(MotifModel):
             if isinstance(spacer[shift], dict):
                 if len(spacer[shift].keys()) == 0:
                     continue
-                max_position = max([int(x) for x in spacer[shift].keys()])
+                max_position = max(int(x) for x in spacer[shift].keys())
                 result = [0] * (max_position + 1)
                 for i in spacer[shift].keys():
                     result[int(i)] = spacer[shift][i]
@@ -119,10 +118,8 @@ class MGMMotifModel(MotifModel):
 
         keys = sorted(self._motif.keys())
 
-        list_entries = list()
-        for p in range(len(next(iter(self._motif.values())))):
-            list_entries.append(
-                [self._motif[k][p] for k in keys]
-            )
-
+        list_entries = [
+            [self._motif[k][p] for k in keys]
+            for p in range(len(next(iter(self._motif.values()))))
+        ]
         return pd.DataFrame(list_entries, columns=keys)

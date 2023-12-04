@@ -88,7 +88,7 @@ class Options:
             f = open(pf_options, "r")
             return yaml.load(f, Loader=yaml.FullLoader)
         except IOError:
-            logger.warning("Options File Not Found: {}".format(pf_options))
+            logger.warning(f"Options File Not Found: {pf_options}")
             return dict()
 
     @staticmethod
@@ -99,18 +99,13 @@ class Options:
             f = open(pf_default, "r")
             return yaml.load(f, Loader=yaml.FullLoader)
         except IOError:
-            logger.warning("Defaults File Not Found: {}".format(pf_default))
+            logger.warning(f"Defaults File Not Found: {pf_default}")
             return dict()
 
     @staticmethod
     def merge_custom_with_default(default, custom):
-        # type: (Dict[str, Any], Dict[str, Any]) -> Dict[str, Any]
-
-        if default is None and custom is None:
-            return dict()
-
         if default is None:
-            return custom
+            return dict() if custom is None else custom
         if custom is None:
             return default
 
@@ -147,7 +142,7 @@ class Options:
 
         for r in requirements:
             if r not in self._options or self._options[r] is None:
-                raise ValueError("Option required: {}".format(r))
+                raise ValueError(f"Option required: {r}")
 
     def required(self):
         # type: () -> Union[Set[str], None]

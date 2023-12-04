@@ -89,28 +89,6 @@ def main(env, args):
     # plt.show()
     return
 
-    fig = plt.figure()
-    ax = fig.gca(projection='3d')
-    ax.plot_trisurf(df['Chunk Size'], df['p4,p11'], df['Match Rate'], linewidth=0.2)
-    ax.set_xlabel("Chunk Size")
-    ax.set_ylabel("Parameters")
-    ax.set_zlabel("Match Rate")
-    plt.show()
-
-    df2 = df[df["Tool"] == "mgm2"].groupby(["p4", "p11"], as_index=False).mean()
-
-    idx = df2["Match Rate"].argmax()
-    p4 = df2.at[idx, "p4"]
-    p11 = df2.at[idx, "p11"]
-    df_best = df[(df["p4"] == p4) & (df["p11"] == p11)]
-    df_alex = df[(df["p4"] == 10) & (df["p11"] == 20)]
-    fig, ax = plt.subplots()
-    sns.lineplot("Chunk Size", "Match Rate", data=df_best, label="Optimized")
-    sns.lineplot("Chunk Size", "Match Rate", data=df[df["Tool"] == "mprodigal"], label="MProdigal")
-    sns.lineplot("Chunk Size", "Match Rate", data=df_alex, label="Original")
-    ax.set_ylim(0, 1)
-    plt.show()
-
 
 
 

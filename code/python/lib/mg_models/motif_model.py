@@ -14,7 +14,7 @@ class MotifModel:
         # type: (Dict[str, List[float]], Union[None, Dict[int, float]]) -> None
 
         self._motif = motif  # type: Dict[str, List[float]]
-        self._motif_width = max([len(motif[x]) for x in self._motif.keys()])
+        self._motif_width = max(len(motif[x]) for x in self._motif.keys())
 
         self._spacer = MotifModel._init_spacer(spacer)  # type: Union[None, List[float]]
 
@@ -41,11 +41,10 @@ class MotifModel:
                         score += 0.25
                     else:
                         score *= 0.25
+                elif use_log:
+                    score += self._motif[fragment[begin + i]][i]
                 else:
-                    if use_log:
-                        score += self._motif[fragment[begin + i]][i]
-                    else:
-                        score *= self._motif[fragment[begin + i]][i]
+                    score *= self._motif[fragment[begin + i]][i]
 
         if component != "motif":
             if self._spacer is not None:
@@ -61,9 +60,11 @@ class MotifModel:
         # type: (str, Dict[str, Any]) -> Tuple[int, float]
 
         return max(
-            [(pos, self.score(fragment, begin=pos, **kwargs))
-             for pos in range(len(fragment) - self._motif_width)],
-            key=lambda x: x[1]
+            (
+                (pos, self.score(fragment, begin=pos, **kwargs))
+                for pos in range(len(fragment) - self._motif_width)
+            ),
+            key=lambda x: x[1],
         )
 
     def motif_width(self):
@@ -78,7 +79,7 @@ class MotifModel:
             return None
 
         if isinstance(spacer, dict):
-            max_position = max([int(x) for x in spacer.keys()])
+            max_position = max(int(x) for x in spacer.keys())
             result = [0] * (max_position + 1)
             for i in spacer.keys():
                 result[int(i)] = spacer[i]
@@ -95,17 +96,13 @@ class MotifModel:
 
         keys = sorted(self._motif.keys())
 
-        list_entries = list()
-        for p in range(self.motif_width()):
-            list_entries.append(
-                [self._motif[k][p] for k in keys]
-            )
-
+        list_entries = [
+            [self._motif[k][p] for k in keys] for p in range(self.motif_width())
+        ]
         return pd.DataFrame(list_entries, columns=keys)
 
     def to_string(self):
-        # type: () -> str
-        out = ""
-        for letter in sorted(self._motif.keys()):
-            out += letter + " ".join([str(x) for x in self._motif[letter]]) + "\n"
-        return out
+        return "".join(
+            letter + " ".join([str(x) for x in self._motif[letter]]) + "\n"
+            for letter in sorted(self._motif.keys())
+        )

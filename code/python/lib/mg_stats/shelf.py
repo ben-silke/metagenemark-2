@@ -20,11 +20,10 @@ def all_columns_equal(df, columns=None):
     if columns is None:
         columns = df.columns.values
 
-    # create condition list
-    conditions = list()
-    for i in range(1, len(columns)):
-        conditions.append(f"(df[{columns[i-1]}] == df[{columns[i]}])")
-
+    conditions = [
+        f"(df[{columns[i - 1]}] == df[{columns[i]}])"
+        for i in range(1, len(columns))
+    ]
     return eval(" & ".join(conditions))
 
 
@@ -41,18 +40,22 @@ def create_joint_reference_from_list(df, list_reference):
     reference_values = df.loc[reference_rows, f"3p-{list_reference[0]}"]
     df.loc[reference_rows, f"3p-{reference}"] = reference_values
 
-    list_partial = [f"'Partial3p-{r}'" for r in list_reference if f"Partial3p-{r}" in df.columns.values]
-    if len(list_partial) > 0:
-
+    if list_partial := [
+        f"'Partial3p-{r}'"
+        for r in list_reference
+        if f"Partial3p-{r}" in df.columns.values
+    ]:
         reference_rows = all_columns_equal(df, list_partial)
         reference_values = df.loc[reference_rows, f"Partial3p-{list_reference[0]}"]
         df.loc[reference_rows, f"Partial3p-{reference}"] = reference_values
 
 
 
-    list_partial = [f"'Partial5p-{r}'" for r in list_reference if f"Partial5p-{r}" in df.columns.values]
-    if len(list_partial) > 0:
-
+    if list_partial := [
+        f"'Partial5p-{r}'"
+        for r in list_reference
+        if f"Partial5p-{r}" in df.columns.values
+    ]:
         reference_rows = all_columns_equal(df, list_partial)
         reference_values = df.loc[reference_rows, f"Partial5p-{list_reference[0]}"]
         df.loc[reference_rows, f"Partial5p-{reference}"] = reference_values
@@ -103,12 +106,12 @@ def tidy_genome_level(env, df):
                       "Number of Comp Match", "Number of Comp Found", "Precision", "Recall", "WR", "Number of Missed",
                       "Sensitivity", "Specificity", "Error Rate",
                       "IC3p Match", "IC5p Match", "Comp Match"]
-    df_total = list()
+    df_total = []
 
     list_index = [x for x in ["Genome", "Clade", "Chunk Size", "Genome GC", "Number in Reference"] if x in df.columns]
     for v in values_to_melt:
         value_vars = [x for x in df.columns if v == x.split("(")[0].strip()]
-        if len(value_vars) == 0:
+        if not value_vars:
             continue
         df_curr = pd.melt(df, id_vars=list_index,
                           value_vars=value_vars,
@@ -136,7 +139,7 @@ def check_tools_and_reference_lists(df, tools, ref_5p, ref_3p):
     # get tools list
     # If not provided, extract from df
     # Make sure it doesn't contain any references
-    all_tools = sorted(set([x.split("-")[1] for x in df.columns if "5p-" in x]))
+    all_tools = sorted({x.split("-")[1] for x in df.columns if "5p-" in x})
 
     # check that references exist
     for list_ref in [ref_5p, ref_3p]:

@@ -141,7 +141,7 @@ def test_rbs_built_from_most_conserved_motifs_for_gi(env, gi, **kwargs):
 
     gms2_mod = GMS2Mod.init_from_file(pf_mod)
 
-    list_entries = list()
+    list_entries = []
     for thresh in tqdm(np.arange(-2.0, 6, 0.2)):
 
         while current_index < len(labels) and float(
@@ -190,7 +190,7 @@ def test_rbs_built_from_most_conserved_motifs(env, gil, **kwargs):
 
 
     if pf_trained is None:
-        list_df = list()
+        list_df = []
         for gi in gil:
             # if "denitrificans" not in gi.name:
             #     continue

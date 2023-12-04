@@ -104,7 +104,7 @@ def collect_start_info_from_gil(env, gil, **kwargs):
     pf_output = get_value(kwargs, "pf_output", None, valid_type=str)
     dn_gms2 = get_value(kwargs, "dn_gms2", "gms2", valid_type=str)
 
-    list_entries = list()
+    list_entries = []
     for gi in tqdm(gil, total=len(gil)):
         entry = collect_start_info_from_gi(env, gi, dn_gms2=dn_gms2)
         list_entries.append(entry)
@@ -118,7 +118,7 @@ def collect_start_info_from_gil(env, gil, **kwargs):
 def collect_start_info_from_gil_and_print_to_file(env, gil, pf_output):
     # type: (Environment, GenomeInfoList, str) -> str
 
-    list_entries = list()
+    list_entries = []
     for gi in tqdm(gil, total=len(gil)):
         entry = collect_start_info_from_gi(env, gi)
         list_entries.append(entry)

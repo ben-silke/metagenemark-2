@@ -55,7 +55,7 @@ logger = logging.getLogger("logger")  # type: logging.Logger
 def test_component_for_gi(env, gi, list_pf_mgm):
     # type: (Environment, GenomeInfo, List[str]) -> pd.DataFrame
 
-    list_entries = list()
+    list_entries = []
 
     pd_gi = os_join(env["pd-work"], gi.name)
     mkdir_p(pd_gi)
@@ -74,7 +74,7 @@ def test_component_for_gi(env, gi, list_pf_mgm):
 def test_mgm2_models_on_verified(env, gil, list_pf_mgm2):
     # type: (Environment, GenomeInfoList, List[str]) -> None
 
-    list_df = list()
+    list_df = []
 
     for gi in gil:
         logger.info(f"Genome: {gi.name}")
@@ -111,11 +111,11 @@ def main(env, args):
         pf_mgm2 = args.pf_mgm2
     else:
         pd_mgm2 = os.path.abspath(args.pd_mgm2)
-        pf_mgm2 = list()
-        for file in os.listdir(pd_mgm2):
-            if file.endswith(".mod"):
-                pf_mgm2.append(os.path.join(pd_mgm2, file))
-
+        pf_mgm2 = [
+            os.path.join(pd_mgm2, file)
+            for file in os.listdir(pd_mgm2)
+            if file.endswith(".mod")
+        ]
     test_mgm2_models_on_verified(env, gil, pf_mgm2)
 
 

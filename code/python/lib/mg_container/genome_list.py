@@ -81,7 +81,7 @@ class GenomeInfoList:
 
         df = pd.read_csv(pf_table, header=0)
 
-        list_genome_info = list()
+        list_genome_info = []
 
         def parse_attributes(my_str):
             # type: (str) -> Dict[str, Any]

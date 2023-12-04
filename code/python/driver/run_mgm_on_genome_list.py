@@ -56,15 +56,15 @@ logger = logging.getLogger("logger")  # type: logging.Logger
 def parse_tags_from_list(list_tag_value_pairs):
     # type: (List[str]) -> List[Tuple]
     if list_tag_value_pairs is None:
-        return list()
+        return []
 
     if len(list_tag_value_pairs) % 2 != 0:
         raise ValueError("Tag/value pairs list must have a length multiple of 2.")
 
-    list_parsed = list()
-    for i in range(0, len(list_tag_value_pairs), 2):
-        list_parsed.append((list_tag_value_pairs[i], list_tag_value_pairs[i + 1]))
-    return list_parsed
+    return [
+        (list_tag_value_pairs[i], list_tag_value_pairs[i + 1])
+        for i in range(0, len(list_tag_value_pairs), 2)
+    ]
 
 
 def parse_and_set_tags(list_tag_value_pairs, mgm):
@@ -113,24 +113,21 @@ def run_mgm_on_genome_list(env, gil, pf_mgm_mod, **kwargs):
     # No parallelization
     if prl_options is None:
         helper_run_mgm_on_genome_list(env, gil, pf_mgm_mod, **kwargs)
+    elif prl_options["use-pbs"]:
+        # setup PBS jobs
+        pbs = PBS(env, prl_options, splitter=split_gil, merger=merge_identity)
+        pbs.run(
+            data={"gil": gil},
+            func=helper_run_mgm_on_genome_list,
+            func_kwargs={"env": env, "pf_mgm_mod": pf_mgm_mod, **kwargs}
+        )
     else:
-        # PBS Parallelization
-        if prl_options["use-pbs"]:
-            # setup PBS jobs
-            pbs = PBS(env, prl_options, splitter=split_gil, merger=merge_identity)
-            pbs.run(
-                data={"gil": gil},
-                func=helper_run_mgm_on_genome_list,
-                func_kwargs={"env": env, "pf_mgm_mod": pf_mgm_mod, **kwargs}
-            )
-        # Multithreading parallelization
-        else:
-            # parallel using threads
-            run_n_per_thread(
-                list(gil), run_mgm_on_gi, "gi",
-                {"env": env, "pf_mgm_mod": pf_mgm_mod, **kwargs},
-                simultaneous_runs=prl_options.safe_get("num-processors")
-            )
+        # parallel using threads
+        run_n_per_thread(
+            list(gil), run_mgm_on_gi, "gi",
+            {"env": env, "pf_mgm_mod": pf_mgm_mod, **kwargs},
+            simultaneous_runs=prl_options.safe_get("num-processors")
+        )
 
 
 def main(env, args):

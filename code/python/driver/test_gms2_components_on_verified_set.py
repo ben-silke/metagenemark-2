@@ -53,7 +53,7 @@ logger = logging.getLogger("logger")  # type: logging.Logger
 def analyze_gms2_components_on_verified_set_for_gi(env, gi):
     # type: (Environment, GenomeInfo) -> pd.DataFrame
 
-    list_entries = list()
+    list_entries = []
 
     start_components = {
         "Start Codons", "Start Context", "RBS", "Promoter",
@@ -66,14 +66,14 @@ def analyze_gms2_components_on_verified_set_for_gi(env, gi):
     for component_on in sorted(start_components) + ["MGM2*", "MGM", "GMS2"]:
         components_off = start_components.difference({component_on})
 
-        if component_on == "MGM2*" or component_on == "GMS2":
+        if component_on in ["MGM2*", "GMS2"]:
             components_off = set()
         elif component_on == "MGM":
             pass
         elif not component_in_model_file(env, gi, component_on) and component_on not in {"MGM2*", "MGM", "GMS2"}:
             continue
 
-        native_coding_off = False if component_on == "GMS2" else True
+        native_coding_off = component_on != "GMS2"
 
         pd_gi_component = os_join(pd_gi, component_on).replace(" ", "")
         mkdir_p(pd_gi_component)
@@ -81,13 +81,9 @@ def analyze_gms2_components_on_verified_set_for_gi(env, gi):
         env_dup = env.duplicate({"pd-work": pd_gi_component})
 
         if component_on == "Start Context":
-            component_on = {component_on}  # "rbs", "promoter"}
             components_off.remove("RBS")
             components_off.remove("Promoter")
-        else:
-            component_on = {component_on}
-
-
+        component_on = {component_on}  # "rbs", "promoter"}
         results = run_gms2_with_component_toggles_and_get_accuracy(env_dup, gi, components_off,
                                                                    native_coding_off=native_coding_off)
 
@@ -105,15 +101,9 @@ def analyze_gms2_components_on_verified_set_for_gi(env, gi):
 
 
 def analyze_gms2_components_on_verified_set(env, gil):
-    # type: (Environment, GenomeInfoList) -> None
-
-    # run different components
-    list_df = list()
-    for gi in gil:
-        list_df.append(
-            analyze_gms2_components_on_verified_set_for_gi(env, gi)
-        )
-
+    list_df = [
+        analyze_gms2_components_on_verified_set_for_gi(env, gi) for gi in gil
+    ]
     df = pd.concat(list_df, ignore_index=True, sort=False)
     df["Genome"] = df.apply(fix_names, axis=1)
     print(df.to_csv())

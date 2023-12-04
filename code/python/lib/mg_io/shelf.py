@@ -17,12 +17,7 @@ log = logging.getLogger(__name__)
 
 
 def write_sequence_list_to_fasta_file(sequences, pf_sequences):
-    # type: (List[Seq], str) -> None
-
-    data = ""
-    for i in range(len(sequences)):
-        data += ">{}\n{}\n".format(i, sequences[i])
-
+    data = "".join(f">{i}\n{sequences[i]}\n" for i in range(len(sequences)))
     write_to_file(data, pf_sequences)
 
 

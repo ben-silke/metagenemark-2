@@ -64,7 +64,7 @@ logger = logging.getLogger("logger")  # type: logging.Logger
 def get_stats_at_gcfid_level_with_reference(df, tools, reference):
     # type: (pd.DataFrame, List[str], str) -> pd.DataFrame
 
-    list_entries = list()
+    list_entries = []
 
     for gcfid, df_group in df.groupby("Genome", as_index=False):
 
@@ -106,7 +106,7 @@ def get_stats_at_gcfid_level_with_reference(df, tools, reference):
 def viz_stats_as_function_of_reference_length(env, df_per_gene, tools, reference):
     # type: (Environment, pd.DataFrame, List[str], str) -> None
 
-    list_entries = list()
+    list_entries = []
 
     max_length = np.nanmax(df_per_gene[f"Length({reference})"])
 
@@ -293,7 +293,7 @@ def viz_stats_3p_missed_vs_length(env, df_per_gene, tools, reference):
     min_length = df_with_reference.iloc[0][f"Length({reference})"]
 
 
-    list_entries = list()
+    list_entries = []
     for t in tools:
         curr_length = min_length
         position = 0
@@ -331,7 +331,7 @@ def viz_stats_3p_missed_vs_length(env, df_per_gene, tools, reference):
     # collect in bins
     bins = [[0, 150], [150, 300], [300, 600], [600, 900], [900, float('inf')]]
 
-    list_entries = list()
+    list_entries = []
     for t in tools + [reference]:
         df_tool = df_per_gene[~df_per_gene[f"5p-{t}"].isna()]
         for b in bins:
@@ -392,11 +392,10 @@ def viz_stats_3p(env, df_per_gene, tools, list_ref):
     reference = _helper_df_joint_reference(df_per_gene, list_ref)
     df_per_gene = update_dataframe_with_stats(df_per_gene, tools, reference).copy()
 
-    #### Genome Level
-    # compute stats per genome
-    df_stats_gcfid = list()
-    for _, df_group in df_per_gene.groupby("Genome", as_index=False):
-        df_stats_gcfid.append(get_stats_at_gcfid_level_with_reference(df_group, tools, reference))
+    df_stats_gcfid = [
+        get_stats_at_gcfid_level_with_reference(df_group, tools, reference)
+        for _, df_group in df_per_gene.groupby("Genome", as_index=False)
+    ]
     df_per_genome = pd.concat(df_stats_gcfid, ignore_index=True, sort=False)
 
     df_tidy = tidy_genome_level(env, df_per_genome)
@@ -433,11 +432,10 @@ def viz_stats_5p(env, df_per_gene, tools, list_ref):
     reference = _helper_df_joint_reference(df_per_gene, list_ref)
     df_per_gene = update_dataframe_with_stats(df_per_gene, tools, reference).copy()
 
-    #### Genome Level
-    # compute stats per genome
-    df_stats_gcfid = list()
-    for _, df_group in df_per_gene.groupby("Genome", as_index=False):
-        df_stats_gcfid.append(get_stats_at_gcfid_level_with_reference(df_group, tools, reference))
+    df_stats_gcfid = [
+        get_stats_at_gcfid_level_with_reference(df_group, tools, reference)
+        for _, df_group in df_per_gene.groupby("Genome", as_index=False)
+    ]
     df_per_genome = pd.concat(df_stats_gcfid, ignore_index=True, sort=False)
 
     df_tidy = tidy_genome_level(env, df_per_genome)
@@ -468,7 +466,7 @@ def main(env, args):
     # get tools list
     # If not provided, extract from df
     # Make sure it doesn't contain any references
-    all_tools = sorted(set([x.split("-")[1] for x in df.columns if "5p-" in x]))
+    all_tools = sorted({x.split("-")[1] for x in df.columns if "5p-" in x})
 
     # check that references exist
     for list_ref in [args.ref_5p, args.ref_3p]:

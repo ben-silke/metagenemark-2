@@ -36,7 +36,7 @@ def update_tool_names_to_full(names):
         "prodigal": "Prodigal"
     }
 
-    updated = list()
+    updated = []
     for n in names:
         n = n.lower()
         if n in d:

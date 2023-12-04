@@ -24,9 +24,7 @@ log = logging.getLogger(__name__)
 def mat_to_dict(mat):
     # type: (np.ndarray) -> Dict[str, List[float]]
 
-    index_to_letter = {
-        i: x for i, x in enumerate(list("ACGT"))
-    }
+    index_to_letter = dict(enumerate(list("ACGT")))
 
     result = dict()
 
@@ -40,14 +38,12 @@ def mat_to_dict(mat):
 
 def get_average_zero_order_noncoding(df):
     # type: (pd.DataFrame) -> np.ndarray
-    list_arr = list()
+    list_arr = []
     for idx in df.index:
         mod = GMS2Noncoding(df.at[idx, "Mod"].items["NON_MAT"])
         list_arr.append(mod.pwm_to_array(0))
 
-    avg = np.mean(list_arr, 0)
-
-    return avg
+    return np.mean(list_arr, 0)
 
 
 def build_mgm_motif_model_for_gc(env, df, col, **kwargs):
@@ -107,23 +103,21 @@ def build_mgm_motif_model_for_gc(env, df, col, **kwargs):
             try:
                 for i in l.keys():
                     if i not in values.keys():
-                        values[i] = list()
+                        values[i] = []
                     values[i].append(l[i])
             except Exception:
                 continue
-        for i in values.keys():
+        for i in values:
             values[i] = np.mean(values[i])
 
         total = sum(values.values())
-        for i in values.keys():
+        for i in values:
             values[i] /= total
 
         x = sorted(values.keys())
         y = [values[a] for a in x]
 
-        position_distributions_by_shift[s] = {
-            a: b for a, b in zip(x, y)
-        }
+        position_distributions_by_shift[s] = dict(zip(x, y))
 
     # compile into single model
 
@@ -168,16 +162,14 @@ def build_mgm_motif_model_for_gc_v2(env, df, col, **kwargs):
 
     # Separate motifs per shift
     unique_shifts = sorted(set(update_shifts))
-    array_per_shift = {
-        s: list() for s in unique_shifts
-    }
+    array_per_shift = {s: [] for s in unique_shifts}
 
     for i in range(len(update_shifts)):
         shift = update_shifts[i]
         array_per_shift[shift].append(array[i, shift:shift + original_width, :])
 
     raw_array_per_shift = {
-        x: np.array(array_per_shift[x]) for x in array_per_shift.keys()
+        x: np.array(array_per_shift[x]) for x in array_per_shift
     }
 
     for s in unique_shifts:
@@ -210,23 +202,21 @@ def build_mgm_motif_model_for_gc_v2(env, df, col, **kwargs):
             try:
                 for i in l.keys():
                     if i not in values.keys():
-                        values[i] = list()
+                        values[i] = []
                     values[i].append(l[i])
             except Exception:
                 continue
-        for i in values.keys():
+        for i in values:
             values[i] = np.mean(values[i])
 
         total = sum(values.values())
-        for i in values.keys():
+        for i in values:
             values[i] /= total
 
         x = sorted(values.keys())
         y = [values[a] for a in x]
 
-        position_distributions_by_shift[s] = {
-            a: b for a, b in zip(x, y)
-        }
+        position_distributions_by_shift[s] = dict(zip(x, y))
 
     # compile into single model
 

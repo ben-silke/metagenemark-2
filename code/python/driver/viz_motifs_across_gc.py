@@ -90,6 +90,10 @@ def visualize_matrix_column(env, df, col):
     gc = df["GC"]
     group = df["GENOME_TYPE"]
 
+    # with cbar
+    legend_size = 20
+    fontsize="x-large"
+
     for r in range(1):
 
         reducer = umap.UMAP(random_state=r)
@@ -174,10 +178,8 @@ def visualize_matrix_column(env, df, col):
         fig.savefig(next_name(env["pd-work"]), box_inches='tight')
 
         plt.show()
-        
 
-        # with cbar
-        legend_size = 20
+
         # figsize = set_size("thesis", subplots=(2,3))
         fig = plt.figure(figsize=(17, 6)) #subplots(1, 2, figsize=(12, 6))
         # fig = plt.figure(figsize=figsize)  # subplots(1, 2, figsize=(12, 6))
@@ -190,9 +192,7 @@ def visualize_matrix_column(env, df, col):
                         # cbar_pad=0.1
                         )
 
-        axes = [ax for ax in grid]
-        fontsize="x-large"
-
+        axes = list(grid)
         df_tmp = pd.DataFrame({
             "x1": embedding[:, 0], "x2": embedding[:, 1], "Type": df["Type"].values
         })
@@ -216,7 +216,7 @@ def visualize_matrix_column(env, df, col):
         leg = axes[1].legend(loc="upper center", ncol=3, fontsize=fontsize,
                              bbox_to_anchor=(0.5, 0), frameon=False)
         leg2 = leg
-        for lh in leg.legendHandles:
+        for lh in leg2.legendHandles:
             lh.set_sizes([legend_size] * len(df_tmp["Group"].unique()))
 
         mappable = create_mappable_for_colorbar(gc, "viridis")

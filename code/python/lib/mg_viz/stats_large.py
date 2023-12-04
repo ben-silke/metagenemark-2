@@ -45,11 +45,7 @@ def plot_gc_stats_side_by_side(env, df_tidy, columns, tool_order, reference, **k
     from collections import abc
 
     axes_unr = axes
-    if not isinstance(axes, abc.Iterable):
-        axes = [axes]
-    else:
-        axes = axes.ravel()
-
+    axes = [axes] if not isinstance(axes, abc.Iterable) else axes.ravel()
     ax = None
     i = j = 0
     fontsize="small"
@@ -105,14 +101,9 @@ def plot_gc_stats_side_by_side(env, df_tidy, columns, tool_order, reference, **k
         # }[l.lower()] for l in labels]
         labels = update_tool_names_to_full(labels)
 
-        if legend_pos == "bottom" or True:
-            leg = fig.legend(handles, labels, bbox_to_anchor=(0.5, 0.1), loc='upper center', ncol=legend_cols,
-                             bbox_transform=fig.transFigure, frameon=False,
-                             fontsize="xx-small")
-        else:
-            leg = fig.legend(handles, labels, bbox_to_anchor=(1.05, 0.5), loc='center left',
-                             frameon=False,
-                             fontsize=18)
+        leg = fig.legend(handles, labels, bbox_to_anchor=(0.5, 0.1), loc='upper center', ncol=legend_cols,
+                         bbox_transform=fig.transFigure, frameon=False,
+                         fontsize="xx-small")
         for lh in leg.legendHandles:
             lh.set_alpha(1)
             lh.set_sizes([18] * (len(tool_order)))
@@ -121,11 +112,10 @@ def plot_gc_stats_side_by_side(env, df_tidy, columns, tool_order, reference, **k
             for i in range(col_wrap):
                 fig.align_ylabels(axes_unr[:,i])
 
-        if legend_pos == "bottom" or True:
-            if num_rows == 1:
-                fig.tight_layout(rect=[0,0.05,1,1])
-            else:
-                fig.tight_layout(rect=[0,0.1,1,1])
+        if num_rows == 1:
+            fig.tight_layout(rect=[0,0.05,1,1])
+        else:
+            fig.tight_layout(rect=[0,0.1,1,1])
         # else:
         #     fig.tight_layout(rect=[0, 0, 1, 1])
         fig.savefig(next_name(env["pd-work"]), bbox_extra_artists=(leg,)) #bbox_inches='tight'
@@ -271,11 +261,7 @@ def viz_stats_large_5p_error_vs_gc_by_clade(env, df_tidy, reference, **kwargs):
     from collections import abc
 
     axes_unr = axes
-    if not isinstance(axes, abc.Iterable):
-        axes = [axes]
-    else:
-        axes = axes.ravel()
-
+    axes = [axes] if not isinstance(axes, abc.Iterable) else axes.ravel()
     ax = None
     fontsize = "xx-small"
     counter = 0

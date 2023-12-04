@@ -154,7 +154,7 @@ class MGMMotifModelVisualizer:
             MGMMotifModelVisualizer._viz_logo(mgm_mm, ax_logo)
             MGMMotifModelVisualizer._viz_msa(msa_t, ax_text)
 
-        plt.suptitle("Gc range: {}".format(title))
+        plt.suptitle(f"Gc range: {title}")
 
         plt.tight_layout()
         plt.subplots_adjust(top=0.9)
@@ -173,14 +173,17 @@ class MGMMotifModelVisualizer:
         for l, ax in zip(letters, axes):
             # for each position in motif
             # go through df and accumulate values
-            all_positions = list()
-            all_probs = list()
+            all_positions = []
+            all_probs = []
             for w_pos in range(array.shape[1]):
 
                 for index in range(len(shifts)):
 
                     shifted_position = w_pos
-                    if w_pos < shifts[index] or w_pos >= shifts[index] + motif_width:
+                    if (
+                        shifted_position < shifts[index]
+                        or shifted_position >= shifts[index] + motif_width
+                    ):
                         continue
 
                     all_positions.append(shifted_position)
@@ -190,8 +193,8 @@ class MGMMotifModelVisualizer:
                         raise ValueError("Something's up")
                     all_probs.append(array[index, shifted_position, letter_to_idx[l]])
 
-                # ax.scatter(all_gc, all_probs, marker="+")
-                # seaborn.regplot(all_gc, all_probs, ax=ax, lowess=True, scatter_kws={"s": 5, "alpha": 0.3})
+                        # ax.scatter(all_gc, all_probs, marker="+")
+                        # seaborn.regplot(all_gc, all_probs, ax=ax, lowess=True, scatter_kws={"s": 5, "alpha": 0.3})
             ax.set_title(f"{l}")
 
             df = pd.DataFrame({"Position": all_positions, "Probability": all_probs})

@@ -16,9 +16,7 @@ class Coordinates:
         s = int(shift_coordinates_by)
 
         def stringify(element):
-            if element is None:
-                return ""
-            return str(element)
+            return "" if element is None else str(element)
 
         if field is None:
             return stringify(int(self.left) + s) + delim + stringify(int(self.right) + s) + delim + stringify(
@@ -33,7 +31,7 @@ class Coordinates:
         if field == "strand":
             return stringify(self.strand)
 
-        raise ValueError("Unrecognized field: " + stringify(field))
+        raise ValueError(f"Unrecognized field: {stringify(field)}")
 
     def get_5prime(self):
         return self.left if self.strand == "+" else self.right
@@ -43,18 +41,9 @@ class Coordinates:
 
     @classmethod
     def from_fields(cls, fields):
-        # type: (dict) -> Coordinates
-        left = None
-        right = None
-        strand = None
-
-        if "left" in fields:
-            left = fields["left"]
-        if "right" in fields:
-            right = fields["right"]
-        if "strand" in fields:
-            strand = fields["strand"]
-
+        left = fields["left"] if "left" in fields else None
+        right = fields["right"] if "right" in fields else None
+        strand = fields["strand"] if "strand" in fields else None
         return cls(left, right, strand)
 
 
@@ -165,10 +154,9 @@ class Label:
 
     def is_hypothetical(self):
         # type: () -> bool
-        if self.get_attribute_value("product") is not None and "hypothetical" in self.get_attribute_value("product"):
-            return True
-
-        return False
+        return self.get_attribute_value(
+            "product"
+        ) is not None and "hypothetical" in self.get_attribute_value("product")
 
     def is_frameshifted(self):
         # type: () -> bool
@@ -177,10 +165,7 @@ class Label:
             return False
 
         length = self.coordinates().right - self.coordinates().left + 1
-        if length % 3 != 0:
-            return True
-
-        return False
+        return length % 3 != 0
 
     @classmethod
     def minimum_set_of_field_names(cls):
@@ -214,7 +199,7 @@ class Label:
         if key == "coordinates":
             return Coordinates()
 
-        raise ValueError("Unknown key: " + str(key))
+        raise ValueError(f"Unknown key: {str(key)}")
 
     def get_3prime(self):
         if self._fields["coordinates"] is not None:
@@ -250,7 +235,7 @@ class Labels:
         # type: (List[Label], str) -> None
 
         if labels is None:
-            labels = list()
+            labels = []
 
         self._labels = copy.copy(labels)  # type: List[Label]
         self._labels_by_3p = {create_key_3prime_from_label(lab): lab for lab in labels}
@@ -328,16 +313,17 @@ class Labels:
 
     def to_string(self, shift_coordinates_by=0):
 
-        out = ""
-        for n in range(self._iter_max):
-            out += self._labels[n].to_string(shift_coordinates_by) + "\n"
-
-        return out
+        return "".join(
+            self._labels[n].to_string(shift_coordinates_by) + "\n"
+            for n in range(self._iter_max)
+        )
 
     def to_string_lst(self, shift_coordinates_by=0):
 
-        out = "# GeneMark.hmm-2 LST format\n"
-        out += "# GeneMark.hmm-2 prokaryotic version: 1.14\n"
+        out = (
+            "# GeneMark.hmm-2 LST format\n"
+            + "# GeneMark.hmm-2 prokaryotic version: 1.14\n"
+        )
         out += "# File with sequence: tmpseq.fna\n"
         out += "# File with native parameters: itr_1.mod\n"
         out += "# Native species name and build: gms2-training\n"
@@ -348,7 +334,7 @@ class Labels:
         seqname_to_labels = dict()
         for l in self._labels:  # type: Label
             if l.seqname() not in seqname_to_labels:
-                seqname_to_labels[l.seqname()] = list()
+                seqname_to_labels[l.seqname()] = []
 
             seqname_to_labels[l.seqname()].append(l)
 
@@ -358,10 +344,10 @@ class Labels:
 
             for counter, l in enumerate(seqname_labels):
                 out += str(counter)
-                out += " " + str(l.strand())
-                out += " " + str(l.left() + shift_coordinates_by)
-                out += " " + str(l.right() + shift_coordinates_by)
-                out += " " + str(l.right() - l.left() + 1)
+                out += f" {str(l.strand())}"
+                out += f" {str(l.left() + shift_coordinates_by)}"
+                out += f" {str(l.right() + shift_coordinates_by)}"
+                out += f" {str(l.right() - l.left() + 1)}"
                 out += " " "nativebac" + " AGGAGG 6 1"
                 out += " " + " ."
 
@@ -452,21 +438,17 @@ class Labels:
             if l.strand() == "+":
                 if index == 0:
                     labels_with_no_overlap.add(l)
+                elif l.coordinates().left - labels_combined[index - 1].coordinates().right <= 0:
+                    labels_with_overlap.add(l)
                 else:
-                    if l.coordinates().left - labels_combined[index - 1].coordinates().right <= 0:
-                        labels_with_overlap.add(l)
-                    else:
-                        labels_with_no_overlap.add(l)
-
-            # negative strand
-            else:
-                if index == len(labels_combined) - 1:
                     labels_with_no_overlap.add(l)
-                else:
-                    if labels_combined[index + 1].coordinates().left - l.coordinates().right <= 0:
-                        labels_with_overlap.add(l)
-                    else:
-                        labels_with_no_overlap.add(l)
+
+            elif index == len(labels_combined) - 1:
+                labels_with_no_overlap.add(l)
+            elif labels_combined[index + 1].coordinates().left - l.coordinates().right <= 0:
+                labels_with_overlap.add(l)
+            else:
+                labels_with_no_overlap.add(l)
 
         return labels_with_overlap, labels_with_no_overlap
 
@@ -522,9 +504,8 @@ class Labels:
 
                 if largest_right is None:
                     largest_right = labels[index_of_previous].coordinates().right
-                else:
-                    if largest_right < labels[index_of_previous].coordinates().right:
-                        largest_right = labels[index_of_previous].coordinates().right
+                elif largest_right < labels[index_of_previous].coordinates().right:
+                    largest_right = labels[index_of_previous].coordinates().right
 
             distance = lab.coordinates().left - largest_right if largest_right is not None else None
 
@@ -558,9 +539,8 @@ class Labels:
 
                 if smallest_left is None:
                     smallest_left = labels[index_of_previous].coordinates().left
-                else:
-                    if smallest_left > labels[index_of_previous].coordinates().left:
-                        smallest_left = labels[index_of_previous].coordinates().left
+                elif smallest_left > labels[index_of_previous].coordinates().left:
+                    smallest_left = labels[index_of_previous].coordinates().left
 
             distance = smallest_left - lab.coordinates().right if smallest_left is not None else None
 
@@ -591,11 +571,9 @@ def create_gene_key_from_label(label, genome_name=None):
 def create_key_3prime_from_label(label, genome_name=None):
     # type: (Label, Union[str, None]) -> str
     if label.strand() == "+":
-        return "{};{};{};{};{}".format(genome_name, label.seqname(), "",
-                                       label.coordinates().right, label.strand())
+        return f"{genome_name};{label.seqname()};;{label.coordinates().right};{label.strand()}"
     else:
-        return "{};{};{};{};{}".format(genome_name, label.seqname(), label.coordinates().left,
-                                       "", label.strand())
+        return f"{genome_name};{label.seqname()};{label.coordinates().left};;{label.strand()}"
 
 
 def shift_5prime(label, amount):
@@ -610,7 +588,7 @@ def shift_5prime(label, amount):
 
     if abs(amount) % 3 != 0:
         import logging
-        logging.debug("Shifting 5prime by value ({}) not a multiple of 3".format(amount))
+        logging.debug(f"Shifting 5prime by value ({amount}) not a multiple of 3")
 
     if label.strand() == "+":
         label.coordinates().left += amount
@@ -623,6 +601,6 @@ def get_unique_gene_keys(*args):
 
     keys = set()
     for labels in args:
-        keys = keys.union(set(create_key_3prime_from_label(lab) for lab in labels))
+        keys = keys.union({create_key_3prime_from_label(lab) for lab in labels})
 
     return keys

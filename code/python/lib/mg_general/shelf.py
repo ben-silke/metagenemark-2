@@ -13,18 +13,14 @@ log = logging.getLogger(__name__)
 
 
 def test_log_level():
-    log.debug(f"Test")
-    log.info(f"Test")
-    log.warning(f"Test")
-    log.critical(f"Test")
+    log.debug("Test")
+    log.info("Test")
+    log.warning("Test")
+    log.critical("Test")
 
 
 def list_find_first(a_list, a_filter):
-    # type: (List[Any], Callable) -> Any
-    for x in a_list:
-        if a_filter(x):
-            return x
-    return None
+    return next((x for x in a_list if a_filter(x)), None)
 
 
 def compute_gc(sequences, label=None):
@@ -37,27 +33,26 @@ def compute_gc(sequences, label=None):
         for seqname, seqrecord in sequences.items():
             for i in range(len(seqrecord)):
                 l = seqrecord[i].upper()
-                if l == "G" or l == "C":
+                if l in ["G", "C"]:
                     gc += 1
-                elif l == "A" or l == "T":
+                elif l in ["A", "T"]:
                     at += 1
 
         total = gc + at
         if total != 0:
             gc_percent = 100.0 * gc / float(total)
-    else:
-        if label.seqname() in sequences.keys():
-            seqrecord = sequences[label.seqname()]
-            gc = at = 0
-            for i in range(label.left(), label.right()):
-                l = seqrecord[i].upper()
-                if l == "G" or l == "C":
-                    gc += 1
-                elif l == "A" or l == "T":
-                    at += 1
-            total = gc + at
-            if total != 0:
-                gc_percent = 100.0 * gc / float(total)
+    elif label.seqname() in sequences.keys():
+        seqrecord = sequences[label.seqname()]
+        gc = at = 0
+        for i in range(label.left(), label.right()):
+            l = seqrecord[i].upper()
+            if l in ["G", "C"]:
+                gc += 1
+            elif l in ["A", "T"]:
+                at += 1
+        total = gc + at
+        if total != 0:
+            gc_percent = 100.0 * gc / float(total)
 
     return gc_percent
 
@@ -65,4 +60,8 @@ def compute_gc(sequences, label=None):
 def powerset(iterable, min_len=0):
     """powerset([1,2,3]) --> () (1,) (2,) (3,) (1,2) (1,3) (2,3) (1,2,3)"""
     s = list(iterable)
-    return [x for x in chain.from_iterable(combinations(s, r) for r in range(min_len, len(s) + 1))]
+    return list(
+        chain.from_iterable(
+            combinations(s, r) for r in range(min_len, len(s) + 1)
+        )
+    )

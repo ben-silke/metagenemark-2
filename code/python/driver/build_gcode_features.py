@@ -87,12 +87,11 @@ def get_features_from_prediction(tool, pf_prediction, gcode_true, tag):
     labels_per_seqname = dict()
     for lab in labels:
         if lab.seqname() not in labels_per_seqname:
-            labels_per_seqname[lab.seqname()] = list()
+            labels_per_seqname[lab.seqname()] = []
 
         labels_per_seqname[lab.seqname()].append(lab)
 
-    counter = 0
-    for seqname in labels_per_seqname:
+    for counter, (seqname, value) in enumerate(labels_per_seqname.items()):
         entries[seqname] = dict()
 
         total_score = 0
@@ -100,7 +99,7 @@ def get_features_from_prediction(tool, pf_prediction, gcode_true, tag):
         avg_gc = 0
         num_genes = 0
 
-        for lab in labels_per_seqname[seqname]:
+        for lab in value:
             score = lab.get_attribute_value("score")
             try:
                 score = float(score)
@@ -117,17 +116,16 @@ def get_features_from_prediction(tool, pf_prediction, gcode_true, tag):
             avg_gene_length += abs(lab.right() - lab.left() + 1)
 
 
-        avg_gene_length /= num_genes if num_genes > 0 else 0
-        avg_gc /= num_genes if num_genes > 0 else 0
+        avg_gene_length /= max(num_genes, 0)
+        avg_gc /= max(num_genes, 0)
         entries[seqname] = {
             f"{tag}: Total Score": total_score,
             f"{tag}: Average Gene Length": avg_gene_length,
             f"{tag}: Average Gene GC": avg_gc,
             f"{tag}: Number of Genes": num_genes
         }
-        counter += 1
-        # if counter > 5:
-        #     break
+            # if counter > 5:
+            #     break
     return entries
 
 
@@ -184,9 +182,6 @@ def build_gcode_features_for_gi_for_chunk(env, gi, tool, chunk, **kwargs):
     pf_chunks = mkstemp_closed(dir=env["pd-work"], suffix=".fasta")
     gs.write_to_file(pf_chunks)
 
-    list_entries = list()
-
-
     pd_run = os_join(env["pd-work"], gi.name, f"{dn_prefix}{dn}_{chunk}")
     mkdir_p(pd_run)
 
@@ -195,8 +190,7 @@ def build_gcode_features_for_gi_for_chunk(env, gi, tool, chunk, **kwargs):
                                                           gcode_true=gcode_true, **kwargs)
 
     results["Genome"] = gi.name
-    list_entries.append(results)
-
+    list_entries = [results]
     remove_p(pf_prediction)
     remove_p(pf_chunks)
 
@@ -205,7 +199,7 @@ def build_gcode_features_for_gi_for_chunk(env, gi, tool, chunk, **kwargs):
 
 def build_gcode_features_for_gi(env, gi, tool, chunks, **kwargs):
     # type: (Environment, GenomeInfo, str, List[int], Dict[str, Any]) -> pd.DataFrame
-    list_df = list()
+    list_df = []
     num_processors = get_value(kwargs, "num_processors", 1, valid_type=int)
 
     if num_processors > 1:
@@ -217,7 +211,7 @@ def build_gcode_features_for_gi(env, gi, tool, chunks, **kwargs):
         )
 
     else:
-        list_df = list()
+        list_df = []
         for chunk in chunks:
             logger.debug(f"{gi.name};{chunk}")
             curr = build_gcode_features_for_gi_for_chunk(env, gi, tool, chunk, **kwargs)
@@ -227,14 +221,10 @@ def build_gcode_features_for_gi(env, gi, tool, chunks, **kwargs):
 
 
 def build_gcode_features(env, gil, tool, chunks, **kwargs):
-    # type: (Environment, GenomeInfoList, str, List[int], Dict[str, Any]) -> pd.DataFrame
-    list_df = list()
-
-    for gi in gil:
-        list_df.append(
-            build_gcode_features_for_gi(env, gi, tool, chunks, **kwargs)
-        )
-
+    list_df = [
+        build_gcode_features_for_gi(env, gi, tool, chunks, **kwargs)
+        for gi in gil
+    ]
     return pd.concat(list_df, ignore_index=True, sort=False)
 
 

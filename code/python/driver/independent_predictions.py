@@ -40,9 +40,7 @@ logger = logging.getLogger("logger")  # type: logging.Logger
 
 def ratio_false_true(p_true):
     # type: (float) -> float
-    if p_true == 0:
-        return float('inf')
-    return 1.0 / p_true - 1
+    return float('inf') if p_true == 0 else 1.0 / p_true - 1
 
 
 def main(env, args):

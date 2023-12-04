@@ -68,7 +68,7 @@ def helper_read_group_data(env, gil, **kwargs):
     # type: (Environment, GenomeInfoList, Dict[str, Any]) -> pd.DataFrame
     dn_gms2 = get_value(kwargs, "dn_gms2", "gms2")
 
-    list_entries = list()
+    list_entries = []
 
     for gi in gil:
         try:
@@ -102,18 +102,15 @@ def read_group_data(env, gil, **kwargs):
     prl_options = get_value(kwargs, "prl_options", None)
 
     if not prl_options or not prl_options["use-pbs"]:
-        df = helper_read_group_data(env, gil, **kwargs)
-    else:
-        pbs = PBS(env, prl_options, splitter=split_gil, merger=merge_identity)
-        list_results = pbs.run(
-            gil,
-            helper_read_group_data,
-            {"env": env, **kwargs}
-        )
+        return helper_read_group_data(env, gil, **kwargs)
+    pbs = PBS(env, prl_options, splitter=split_gil, merger=merge_identity)
+    list_results = pbs.run(
+        gil,
+        helper_read_group_data,
+        {"env": env, **kwargs}
+    )
 
-        df = pd.concat(list_results, ignore_index=True, sort=False)
-
-    return df
+    return pd.concat(list_results, ignore_index=True, sort=False)
 
 
 def viz_gms2_groups_over_gc(env, df):

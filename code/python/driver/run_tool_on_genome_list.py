@@ -138,24 +138,21 @@ def run_tool_on_genome_list(env, gil, tool, **kwargs):
     # No parallelization
     if prl_options is None:
         helper_run_tool_on_genome_list(env, gil, tool, **kwargs)
+    elif prl_options["use-pbs"]:
+        # setup PBS jobs
+        pbs = PBS(env, prl_options, splitter=split_gil, merger=merge_identity)
+        pbs.run(
+            data=gil,
+            func=helper_run_tool_on_genome_list,
+            func_kwargs={"env": env, "tool": tool, **kwargs}
+        )
     else:
-        # PBS Parallelization
-        if prl_options["use-pbs"]:
-            # setup PBS jobs
-            pbs = PBS(env, prl_options, splitter=split_gil, merger=merge_identity)
-            pbs.run(
-                data=gil,
-                func=helper_run_tool_on_genome_list,
-                func_kwargs={"env": env, "tool": tool, **kwargs}
-            )
-        # Multithreading parallelization
-        else:
-            # parallel using threads
-            run_n_per_thread(
-                list(gil), run_tool_on_gi, "gi",
-                {"env": env, "tool": tool, **kwargs},
-                simultaneous_runs=prl_options.safe_get("num-processors")
-            )
+        # parallel using threads
+        run_n_per_thread(
+            list(gil), run_tool_on_gi, "gi",
+            {"env": env, "tool": tool, **kwargs},
+            simultaneous_runs=prl_options.safe_get("num-processors")
+        )
 
 
 def main(env, args):

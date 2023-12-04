@@ -52,10 +52,6 @@ logger = logging.getLogger("logger")  # type: logging.Logger
 
 
 def test_component_for_gi(env, gi, list_pf_mgm, list_component):
-    # type: (Environment, GenomeInfo, List[str], List[str]) -> pd.DataFrame
-
-    list_entries = list()
-
     pd_gi = os_join(env["pd-work"], gi.name)
     mkdir_p(pd_gi)
 
@@ -68,8 +64,7 @@ def test_component_for_gi(env, gi, list_pf_mgm, list_component):
 
     ##### GMS2
     results = run_gms2_with_component_toggles_and_get_accuracy(env_dup, gi, set(), native_coding_off=False)
-    list_entries.append({"Tool": "GMS2", **results})
-
+    list_entries = [{"Tool": "GMS2", **results}]
     # ##### MGM + native component: MGM with native trained component
     # results = run_gms2_with_component_toggles_and_get_accuracy(env_dup, gi, components_off, native_coding_off=True)
     # list_entries.append({"Tool": f"MGM: Native {component}", **results})
@@ -77,11 +72,11 @@ def test_component_for_gi(env, gi, list_pf_mgm, list_component):
     ##### MGM + GC component: MGM from new model
     for pf_mgm, component in zip(list_pf_mgm, list_component):
         results = run_mgm2_and_get_accuracy(env_dup, gi, pf_mgm)
-        list_entries.append({"Tool": f"MGM2", **results})
+        list_entries.append({"Tool": "MGM2", **results})
 
     ##### MGM
     results = run_mgm_and_get_accuracy(env_dup, gi, os_join(env["pd-bin-external"], "gms2", "mgm_11.mod"))
-    list_entries.append({"Tool": f"MGM", **results})
+    list_entries.append({"Tool": "MGM", **results})
 
     return pd.DataFrame(list_entries)
 
@@ -89,7 +84,7 @@ def test_component_for_gi(env, gi, list_pf_mgm, list_component):
 def test_component_on_verified(env, gil, list_pf_mgm_bac, list_pf_mgm_arc, list_component):
     # type: (Environment, GenomeInfoList, List[str], List[str], List[str]) -> None
 
-    list_df = list()
+    list_df = []
 
     for gi in gil:
         if "Halobacterium" in gi.name or "pharaonis" in gi.name or "pernix" in gi.name:
