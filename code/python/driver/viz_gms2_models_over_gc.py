@@ -75,8 +75,8 @@ def viz_rbs(env, df):
         mod = df.at[idx, "Mod"]
 
         # get models
-        rbs_model = MotifModel(mod.items[f"RBS_MAT"], mod.items[f"RBS_POS_DISTR"])
-        nonc_mat = GMS2Noncoding(mod.items[f"NON_MAT"])
+        rbs_model = MotifModel(mod.items["RBS_MAT"], mod.items["RBS_POS_DISTR"])
+        nonc_mat = GMS2Noncoding(mod.items["NON_MAT"])
         np_nonc_mat = nonc_mat.pwm_to_array(0)
 
         # rbs
@@ -175,7 +175,7 @@ def viz_genome_type_per_gc(env, list_gi, list_mod, list_gc):
     fig, axes = plt.subplots(num_rows, num_columns, sharey="all")
     fig_rbs, axes_rbs = plt.subplots(num_rows, num_columns, sharey="all")
 
-    list_df = list()
+    list_df = []
     for i in range(num_rows):
         for j in range(num_columns):
 
@@ -192,8 +192,10 @@ def viz_genome_type_per_gc(env, list_gi, list_mod, list_gc):
                 break
             mod = df_c.at[df_c.index[i*num_columns + j], "Mod"]
 
-            motif_mat = MotifModel(mod.items[f"PROMOTER_MAT"], mod.items[f"PROMOTER_POS_DISTR"])
-            nonc_mat = GMS2Noncoding(mod.items[f"NON_MAT"])
+            motif_mat = MotifModel(
+                mod.items["PROMOTER_MAT"], mod.items["PROMOTER_POS_DISTR"]
+            )
+            nonc_mat = GMS2Noncoding(mod.items["NON_MAT"])
 
             list_df.append(pd.DataFrame({
                 "Distance": range(len(motif_mat._spacer)),
@@ -212,8 +214,8 @@ def viz_genome_type_per_gc(env, list_gi, list_mod, list_gc):
             ax.set_ylim(0, 2.5)
 
             ax = axes_rbs[i][j]
-            motif_mat = MotifModel(mod.items[f"RBS_MAT"], mod.items[f"RBS_POS_DISTR"])
-            nonc_mat = GMS2Noncoding(mod.items[f"NON_MAT"])
+            motif_mat = MotifModel(mod.items["RBS_MAT"], mod.items["RBS_POS_DISTR"])
+            nonc_mat = GMS2Noncoding(mod.items["NON_MAT"])
             df_motif_mat = motif_mat.pwm_to_df()
             np_nonc_mat = nonc_mat.pwm_to_array(0)
 
@@ -240,9 +242,11 @@ def viz_genome_type_per_gc(env, list_gi, list_mod, list_gc):
         mod = df_c.at[df_c.index[i], "Mod"]
 
         # get models
-        rbs_model = MotifModel(mod.items[f"RBS_MAT"], mod.items[f"RBS_POS_DISTR"])
-        prom_model = MotifModel(mod.items[f"PROMOTER_MAT"], mod.items[f"PROMOTER_POS_DISTR"])
-        nonc_mat = GMS2Noncoding(mod.items[f"NON_MAT"])
+        rbs_model = MotifModel(mod.items["RBS_MAT"], mod.items["RBS_POS_DISTR"])
+        prom_model = MotifModel(
+            mod.items["PROMOTER_MAT"], mod.items["PROMOTER_POS_DISTR"]
+        )
+        nonc_mat = GMS2Noncoding(mod.items["NON_MAT"])
         np_nonc_mat = nonc_mat.pwm_to_array(0)
 
         # rbs
@@ -299,8 +303,6 @@ def viz_genome_type_per_gc(env, list_gi, list_mod, list_gc):
 
     leg = fig.legend(handles, labels, bbox_to_anchor=(0.5, 0.1), loc='upper center', ncol=2,
                      bbox_transform=fig.transFigure, frameon=False)
-                     # fontsize=fontsize)
-
     for lh in leg.legendHandles:
         lh.set_alpha(1)
         # lh.set_sizes([18] * 2)
@@ -327,9 +329,9 @@ def helper_read_genome_data(env, gil, **kwargs):
     dn_gms2 = get_value(kwargs, "dn_gms2", "gms2")
     prl_options = get_value(kwargs, "prl_options", None)
 
-    list_gi = list()
-    list_mod = list()
-    list_gc = list()
+    list_gi = []
+    list_mod = []
+    list_gc = []
 
     for gi in tqdm(gil, total=len(gil)):
         try:
@@ -352,9 +354,9 @@ def read_genome_data(env, gil, **kwargs):
     dn_gms2 = get_value(kwargs, "dn_gms2", "gms2")
     prl_options = get_value(kwargs, "prl_options", None)
 
-    list_gi = list()
-    list_mod = list()
-    list_gc = list()
+    list_gi = []
+    list_mod = []
+    list_gc = []
 
     if not prl_options or not prl_options["use-pbs"]:
         list_gi, list_mod, list_gc = helper_read_genome_data(env, gil, **kwargs)

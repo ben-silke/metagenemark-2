@@ -65,7 +65,7 @@ def main(env, args):
             random.seed(100)
         else:
             random.seed(int(rs))
-            logger.critical("Random-seed: {}".format(rs))
+            logger.critical(f"Random-seed: {rs}")
 
     else:
         random.seed(100)
@@ -73,12 +73,12 @@ def main(env, args):
     if "env" in func_args:
         if args.pd_work is not None:
             func_args["env"] = func_args["env"].duplicate({"pd-work": args.pd_work})
-            logger.critical("{}".format(func_args["env"]["pd-work"]))
+            logger.critical(f'{func_args["env"]["pd-work"]}')
 
     # Update pd-work to create a tmp directory
     mkdir_p(func_args["env"]["pd-work"])
     func_args["env"]["pd-work"] = run_shell_cmd(
-        "mktemp --tmpdir={} -d".format(func_args["env"]["pd-work"])
+        f'mktemp --tmpdir={func_args["env"]["pd-work"]} -d'
     ).strip()
 
     # logger.critical("{}\n{}".format(func, func_args))

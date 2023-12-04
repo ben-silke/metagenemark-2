@@ -48,7 +48,7 @@ logger = logging.getLogger("logger")  # type: logging.Logger
 def get_stats_at_gcfid_level(df, tools):
     # type: (pd.DataFrame) -> pd.DataFrame
 
-    list_entries = list()
+    list_entries = []
 
     ps = powerset(tools, min_len=2)
 
@@ -163,7 +163,7 @@ def tools_match_for_dataframe_row(r, tools):
     # type: (pd.Series, Iterable[str]) -> bool
 
     # check all tools make a prediction for current gene
-    list_5ps = list()
+    list_5ps = []
 
     for t in tools:
         if r[f"5p-{t}"] is None:

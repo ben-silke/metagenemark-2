@@ -74,7 +74,7 @@ logger = logging.getLogger("logger")  # type: logging.Logger
 def get_stats_at_gcfid_level_with_reference(df, tools, reference):
     # type: (pd.DataFrame, List[str], str) -> pd.DataFrame
 
-    list_entries = list()
+    list_entries = []
 
     for t in tools + [reference]:
         df = df[~((df[f"Partial5p-{t}"] == True) & (df[f"Partial3p-{t}"] == True))]
@@ -132,7 +132,7 @@ def get_stats_at_gcfid_level_with_reference(df, tools, reference):
 
         for t in tools + [reference]:
             result[f"Number of Predictions({t},{t})"] = df_group[f"5p-{t}"].count()
-            result[f"Runtime({t},{t})"] = df_group[f"Runtime"].mean()
+            result[f"Runtime({t},{t})"] = df_group["Runtime"].mean()
             if t != reference:
                 result[f"Precision({t},{reference})"] = result[f"Number of Found({t},{reference})"] / result[
                     f"Number of Predictions({t},{t})"]
@@ -146,7 +146,7 @@ def get_stats_at_gcfid_level_with_reference(df, tools, reference):
                 result[f"Specificity({t},{reference})"] = result[f"Number of Found({t},{reference})"] / result[
                     f"Number of Predictions({t},{t})"]
 
-            # result[f"Runtime({t, t})"] = df_group[f"Runtime"].mean()
+                    # result[f"Runtime({t, t})"] = df_group[f"Runtime"].mean()
 
         result["Genome"] = gcfid
         result["Genome GC"] = df_group.at[df_group.index[0], "Genome GC"]
@@ -376,7 +376,7 @@ def viz_plot_per_genome_y_error_x_chunk(env, df):
                       "Number of IC5p Match", "Number of IC5p Found", "Number of IC3p Match", "Number of IC3p Found",
                       "Number of Comp Match", "Number of Comp Found", "Precision", "Recall", "WR", "Number of Missed",
                       "IC3p Match", "IC5p Match", "Comp Match"]
-    df_total = list()
+    df_total = []
     for v in values_to_melt:
         if v == "Precision":
             print('hi')
@@ -485,32 +485,6 @@ def viz_plot_per_genome_y_error_x_chunk(env, df):
     print(df_comprehensive.to_csv())
 
     return
-
-    fig, axes = plt.subplots(2, 4, sharey="all", sharex="all")
-    axes = axes.ravel()
-    for i, g in enumerate(genomes):
-        ax = axes[i]  # type: plt.Axes
-
-        df_curr = df[df["Genome"] == g]
-        df_curr = pd.melt(df_curr, id_vars=["Genome", "Chunk Size"],
-                          value_vars=[x for x in df_curr.columns if "Number of Error(" in x],
-                          var_name="Combination", value_name="Number of Error")
-
-        seaborn.lineplot("Chunk Size", "Number of Error", data=df_curr, hue="Combination", ax=ax, legend=False)
-
-    plt.show()
-    fig, axes = plt.subplots(2, 4, sharey="all", sharex="all")
-    axes = axes.ravel()
-
-    for i, g in enumerate(genomes):
-        ax = axes[i]  # type: plt.Axes
-        df_curr = df[df["Genome"] == g]
-        df_curr = pd.melt(df_curr, id_vars=["Genome", "Chunk Size"],
-                          value_vars=[x for x in df_curr.columns if "Number of Found(" in x],
-                          var_name="Combination", value_name="Number of Found")
-        seaborn.lineplot("Chunk Size", "Number of Found", data=df_curr, hue="Combination", ax=ax, legend=False)
-
-    plt.show()
 
 
 def viz_plot_per_genome_5p(env, df_gcfid):
@@ -753,7 +727,9 @@ def viz_stats_5p_error_rate_partial(env, df_tidy, reference):
     df2_tidy = reduce(lambda df1, df2: pd.merge(df1, df2, on=["Chunk Size", "Condition", "Tool"],
                                                 how="outer"), [df2_tidy, df_tmp])
 
-    df2_tidy[f"Error Rate"] = (df2_tidy[f"Found"] - df2_tidy[f"Match"]) / df2_tidy[f"Found"]
+    df2_tidy["Error Rate"] = (
+        df2_tidy["Found"] - df2_tidy["Match"]
+    ) / df2_tidy["Found"]
 
     df2_tidy["Condition"].replace({
         "IC5p": "Incomplete at Gene Start",
@@ -765,7 +741,7 @@ def viz_stats_5p_error_rate_partial(env, df_tidy, reference):
     g = seaborn.FacetGrid(df2_tidy, col="Condition", hue="Tool", sharey=True, palette=CM.get_map("tools"),
                           hue_order=hue_order)
 
-    g.map(plt.plot, "Chunk Size", f"Error Rate")
+    g.map(plt.plot, "Chunk Size", "Error Rate")
     g.set_titles("{col_name}", style="italic")
     # g.set(ylim=(0, 1))
     g.set(xlim=(0, 5100))
@@ -809,7 +785,7 @@ def viz_stats_5p_error_rate_partial(env, df_tidy, reference):
     df_tmp = reduce(lambda df1, df2: pd.merge(df1, df2, on=["Chunk Size", "Condition", "Tool"],
                                               how="outer"), [df2_tidy, df_tmp])
 
-    df_tmp[f"Score"] = (df_tmp[f"Score"] - df_tmp[f"Match"]) / df_tmp[f"Score"]
+    df_tmp["Score"] = (df_tmp["Score"] - df_tmp["Match"]) / df_tmp["Score"]
     df_tmp["Metric"] = "Error Rate"
 
     df2_tidy = pd.concat([df2_tidy, df_tmp])
@@ -827,7 +803,7 @@ def viz_stats_5p_error_rate_partial(env, df_tidy, reference):
         row="Metric", hue_order=hue_order
     )
 
-    g.map(plt.plot, "Chunk Size", f"Score")
+    g.map(plt.plot, "Chunk Size", "Score")
     g.set_titles("{col_name}", style="italic")
     # g.set(ylim=(0, 1))
     # g.set(xlim=(0, 5100))
@@ -854,11 +830,10 @@ def _helper_join_reference_and_tidy_data(env, df_per_gene, tools, list_ref):
     reference = _helper_df_joint_reference(df_per_gene, list_ref)
     df_per_gene = update_dataframe_with_stats(df_per_gene, tools, reference).copy()
 
-    #### Genome Level
-    # compute stats per genome
-    df_stats_gcfid = list()
-    for _, df_group in df_per_gene.groupby("Chunk Size", as_index=False):
-        df_stats_gcfid.append(get_stats_at_gcfid_level_with_reference(df_group, tools, reference))
+    df_stats_gcfid = [
+        get_stats_at_gcfid_level_with_reference(df_group, tools, reference)
+        for _, df_group in df_per_gene.groupby("Chunk Size", as_index=False)
+    ]
     df_per_genome = pd.concat(df_stats_gcfid, ignore_index=True, sort=False)
 
     df_tidy = tidy_genome_level(env, df_per_genome)
@@ -876,7 +851,7 @@ def yeild_from_file_per_genome_per_chunk(pf_data):
     gaat = 8
 
     genome_to_df = dict()      # type: Dict[str, Dict[str, pd.DataFrame]]
-    list_df_genome = list()
+    list_df_genome = []
     prev_genome = None
     prev_chunk = None
     for df_chunk in gen_df_chunk:

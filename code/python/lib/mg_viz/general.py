@@ -216,8 +216,7 @@ def plot_scatter_matrix(df_data, column_names, color_by, figure_options=None, **
     else:
         df_features = df_data[column_names]
 
-    should_jitter = get_value(kwargs, "jitter", False)
-    if should_jitter:
+    if should_jitter := get_value(kwargs, "jitter", False):
         jitter(df_features, column_names)
 
     fig, ax = plt.subplots()
@@ -229,11 +228,6 @@ def plot_scatter_matrix(df_data, column_names, color_by, figure_options=None, **
     else:
         ax = sns.pairplot(df_features, plot_kws={"s": 10})
 
-    # for lh in ax._legend.legendHandles:
-    #     lh.set_alpha(1)
-    #     lh._sizes = [50]
-
-        # sm = scatter_matrix(df_features, diagonal="kde", figsize=(10, 10))
     # # Change label rotation
     #
     # [s.xaxis.label.set_rotation(45) for s in sm.reshape(-1)]

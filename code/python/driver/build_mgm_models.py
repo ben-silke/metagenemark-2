@@ -142,7 +142,7 @@ def build_mgm_motif_models_for_all_gc(env, df, name, **kwargs):
     binned_dfs = bin_by_gc(df, step=bin_size)
 
     # for each binned dataframe, build specific model
-    list_mgm_models = list()  # type: List[Tuple[float, float, MGMMotifModel]]
+    list_mgm_models = []
     for info in binned_dfs:
         lower, upper, df_gc = info
 
@@ -158,7 +158,7 @@ def build_mgm_motif_models_for_all_gc(env, df, name, **kwargs):
 
         if mgm_mm is None:
             # use previous model
-            if len(list_mgm_models) > 0:
+            if list_mgm_models:
                 prev = list_mgm_models[-1][2]
                 list_mgm_models.append([lower, upper, prev])
         else:
@@ -190,7 +190,7 @@ def build_mgm_models(env, df, pf_output):
     }
 
     name_to_models = dict()  # type: Dict[str, Dict[str, Dict[str, MGMMotifModelAllGC]]]
-    for species_type in type_model_group.keys():
+    for species_type in type_model_group:
         name_to_models[species_type] = dict()  # type: Dict[str, Dict[str, MGMMotifModelAllGC]]
         for name in type_model_group[species_type].keys():
             name_to_models[species_type][name] = dict()

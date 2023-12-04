@@ -14,19 +14,6 @@ def _init_mapping_ancestors():
     palette = seaborn.xkcd_palette(colors)
     return {x[0]: x[1] for x in zip(ancestors, palette)}
 
-# def _init_mapping_ancestors():
-#     colors = ["windows blue", "amber", "faded green", "dusty purple"]
-#     ancestors = ["Archaea", "Actinobacteria", "Enterobacterales", "FCB group"]
-#
-#     color_pal = seaborn.color_palette("colorblind", 6).as_hex()
-#     colors = ','.join(color_pal)
-#     palette = seaborn.color_palette(color_pal)
-#
-
-
-
-    return {x[0]: x[1] for x in zip(ancestors, palette)}
-
 def _init_mapping_verified():
     colors = ["windows blue", "amber", "faded green", "dusty purple", "pale red"]
     ancestors = ["E. coli", "H. salinarum", "N. pharaonis", "M. tuberculosis", "R. denitrificans"]
@@ -96,7 +83,7 @@ class ColorMap:
         # type: (str) -> Dict[str, Any]
 
         if name not in ColorMap._mappings:
-            raise ValueError("Unknown color mapping for: {}".format(name))
+            raise ValueError(f"Unknown color mapping for: {name}")
 
         return ColorMap._mappings[name]
 

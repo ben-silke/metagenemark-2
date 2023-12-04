@@ -67,7 +67,7 @@ logger = logging.getLogger("logger")  # type: logging.Logger
 def get_stats_at_gcfid_level_with_reference(df, tools, reference):
     # type: (pd.DataFrame, List[str], str) -> pd.DataFrame
 
-    list_entries = list()
+    list_entries = []
 
     for gcfid, df_group in df.groupby("Genome", as_index=False):
 
@@ -122,7 +122,7 @@ def get_stats_at_gcfid_level_with_reference(df, tools, reference):
 
         for t in tools + [reference]:
             result[f"Number of Predictions({t},{t})"] = df_group[f"5p-{t}"].count()
-            result[f"Runtime({t},{t})"] = df_group[f"Runtime"].mean()
+            result[f"Runtime({t},{t})"] = df_group["Runtime"].mean()
             if t != reference:
                 result[f"Precision({t},{reference})"] = result[f"Number of Found({t},{reference})"] / result[
                     f"Number of Predictions({t},{t})"]
@@ -136,7 +136,7 @@ def get_stats_at_gcfid_level_with_reference(df, tools, reference):
                 result[f"Specificity({t},{reference})"] = result[f"Number of Found({t},{reference})"] / result[
                     f"Number of Predictions({t},{t})"]
 
-            # result[f"Runtime({t, t})"] = df_group[f"Runtime"].mean()
+                    # result[f"Runtime({t, t})"] = df_group[f"Runtime"].mean()
 
         result["Genome"] = gcfid
         result["Genome GC"] = df_group.at[df_group.index[0], "Genome GC"]
@@ -366,7 +366,7 @@ def viz_plot_per_genome_y_error_x_chunk(env, df):
                       "Number of IC5p Match", "Number of IC5p Found", "Number of IC3p Match", "Number of IC3p Found",
                       "Number of Comp Match", "Number of Comp Found", "Precision", "Recall", "WR", "Number of Missed",
                       "IC3p Match", "IC5p Match", "Comp Match"]
-    df_total = list()
+    df_total = []
     for v in values_to_melt:
         if v == "Precision":
             print('hi')
@@ -475,32 +475,6 @@ def viz_plot_per_genome_y_error_x_chunk(env, df):
     print(df_comprehensive.to_csv())
 
     return
-
-    fig, axes = plt.subplots(2, 4, sharey="all", sharex="all")
-    axes = axes.ravel()
-    for i, g in enumerate(genomes):
-        ax = axes[i]  # type: plt.Axes
-
-        df_curr = df[df["Genome"] == g]
-        df_curr = pd.melt(df_curr, id_vars=["Genome", "Chunk Size"],
-                          value_vars=[x for x in df_curr.columns if "Number of Error(" in x],
-                          var_name="Combination", value_name="Number of Error")
-
-        seaborn.lineplot("Chunk Size", "Number of Error", data=df_curr, hue="Combination", ax=ax, legend=False)
-
-    plt.show()
-    fig, axes = plt.subplots(2, 4, sharey="all", sharex="all")
-    axes = axes.ravel()
-
-    for i, g in enumerate(genomes):
-        ax = axes[i]  # type: plt.Axes
-        df_curr = df[df["Genome"] == g]
-        df_curr = pd.melt(df_curr, id_vars=["Genome", "Chunk Size"],
-                          value_vars=[x for x in df_curr.columns if "Number of Found(" in x],
-                          var_name="Combination", value_name="Number of Found")
-        seaborn.lineplot("Chunk Size", "Number of Found", data=df_curr, hue="Combination", ax=ax, legend=False)
-
-    plt.show()
 
 
 def viz_plot_per_genome_5p(env, df_gcfid):

@@ -56,7 +56,7 @@ class GenomeSplitter:
         if not allow_split_in_cds and labels:
             interval_labels = GenomeSplitter.split_labels_into_intervals(labels)
 
-        list_chunk_info = list()
+        list_chunk_info = []
         counter = 0
 
         for seqname, seqrecord in sequences.items():
@@ -68,7 +68,7 @@ class GenomeSplitter:
                 right_excluded = min(offset + chunk_size_nt, len(seqrecord))
 
                 while interval_labels and left > 0 and interval_labels.overlaps_point(right_excluded-1) \
-                        and right_excluded < len(seqrecord):
+                            and right_excluded < len(seqrecord):
                     lab = interval_labels[right_excluded-1].pop().data
                     right_excluded = lab.right() + 1      # skip
 

@@ -33,17 +33,15 @@ class GMS2Mod:
 
                 if len(value) == 1:
                     result[tag] = value[0]
+                elif tag.endswith("_MAT"):
+                    result[tag] = convert_to_matrix(value)
+                elif tag.endswith("_POS_DISTR"):
+                    result[tag] = convert_to_position_distribution(value)
                 else:
-                    if tag.endswith("_MAT"):
-                        result[tag] = convert_to_matrix(value)
-                    elif tag.endswith("_POS_DISTR"):
-                        result[tag] = convert_to_position_distribution(value)
-                    else:
-                        log.warning(f"Unknown format for tag: {tag}")
+                    log.warning(f"Unknown format for tag: {tag}")
             else:
-                pass
                 position += 1
-                # raise ValueError("Error in reading file")
+                        # raise ValueError("Error in reading file")
 
         return cls(result)
 

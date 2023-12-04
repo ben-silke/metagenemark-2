@@ -71,7 +71,7 @@ def get_loess(local_x, local_y):
 def visualize_start_codons(env, viz_collector):
     # type: (Environment, Dict[str, Dict[str, Dict[str, Any]]]) -> None
 
-    list_entries = list()
+    list_entries = []
 
     for genome_type in viz_collector:
         for group in viz_collector[genome_type]:
@@ -83,17 +83,19 @@ def visualize_start_codons(env, viz_collector):
                 y = vals["y"]
                 y_fit = vals["y_fit"]
 
-                for i in range(len(x)):
-
-                    list_entries.append({
+                list_entries.extend(
+                    {
                         "Genome Type": genome_type,
-                        "Group": group if genome_type == "Bacteria" else f"{group}*",
+                        "Group": group
+                        if genome_type == "Bacteria"
+                        else f"{group}*",
                         "Codon": codon,
                         "x": x[i],
                         "y": y[i],
-                        "y_fit": y_fit[i]
-                    })
-
+                        "y_fit": y_fit[i],
+                    }
+                    for i in range(len(x))
+                )
     df = pd.DataFrame(list_entries)
     g = seaborn.FacetGrid(df, col="Codon", hue="Group")
     g.map(plt.scatter, "x", "y", alpha=.3, s=2)
@@ -127,7 +129,7 @@ def add_codon_probabilities(env, df, mgm, codons, gms2_group, **kwargs):
 
     df = df[df["Type"] == genome_type].copy()
 
-    list_entries = list()
+    list_entries = []
 
     fig, ax = plt.subplots()
     # values_per_codon = dict()
@@ -232,8 +234,8 @@ def add_stop_codon_probabilities(env, df, mgm, **kwargs):
 def compute_bin_averages(x, y, x_min, x_max, x_step):
     # type: (List[float], List[float], float, float, float) -> [List[float], List[float]]
 
-    x_out = list()
-    y_out = list()
+    x_out = []
+    y_out = []
 
     current = 0
     for x_tag in np.arange(x_min, x_max, x_step):
@@ -250,7 +252,7 @@ def compute_bin_averages(x, y, x_min, x_max, x_step):
             total += 1
             current += 1
 
-        if total == 0 and len(y_out) == 0:
+        if total == 0 and not y_out:
             continue
         avg = y_out[-1] if total == 0 else acc / float(total)
         x_out.append(x_tag)
@@ -349,7 +351,7 @@ def add_start_context_probabilities(df, mgm, input_tag, output_tag, **kwargs):
     # add gc models to mgm
     # for genome_tag in ["A", "B"]:        # genome_type[0]    FIXME
     genome_tag = genome_type[0]
-    for gc_tag in sc_gc.keys():
+    for gc_tag in sc_gc:
         mgm.items_by_species_and_gc[genome_tag][str(gc_tag)].items[output_tag + "_MAT"] = sc_gc[gc_tag]
         mgm.items_by_species_and_gc[genome_tag][str(gc_tag)].items[f"{output_tag}"] = 1
         mgm.items_by_species_and_gc[genome_tag][str(gc_tag)].items[f"{output_tag}_ORDER"] = 2
@@ -445,7 +447,7 @@ def build_mgm_motif_models_for_all_gc(env, df, name, **kwargs):
     binned_dfs = bin_by_gc(df, step=bin_size, gc_feature=gc_feature)
 
     # for each binned dataframe, build specific model
-    list_mgm_models = list()  # type: List[List[float, float, MGMMotifModelV2]]
+    list_mgm_models = []
     for info in binned_dfs:
         lower, upper, df_gc = info
         #
@@ -461,7 +463,7 @@ def build_mgm_motif_models_for_all_gc(env, df, name, **kwargs):
 
         if mgm_mm is None:
             # use previous model
-            if len(list_mgm_models) > 0:
+            if list_mgm_models:
                 prev = list_mgm_models[-1][2]
                 list_mgm_models.append([lower, upper, prev])
         else:
@@ -490,35 +492,23 @@ def add_motif_probabilities(env, df, mgm, input_tag, output_tag, genome_type, **
 
         motif = motif_by_gc.get_model_by_gc(gc)
 
-        if True or "RBS" in output_tag:
-            # create a label for each shift
-            for shift, prob in motif._shift_prior.items():
-                prob /= 100.0
-                output_tag_ws = f"{output_tag}_{int(shift)}"
-                try:
-                    mgm.items_by_species_and_gc[genome_tag][str(gc)].items[f"{output_tag_ws}_MAT"] = motif._motif[shift]
-                    mgm.items_by_species_and_gc[genome_tag][str(gc)].items[f"{output_tag_ws}_POS_DISTR"] = motif._spacer[
-                    shift]
-                except KeyError:
-                    pass
+        # create a label for each shift
+        for shift, prob in motif._shift_prior.items():
+            prob /= 100.0
+            output_tag_ws = f"{output_tag}_{int(shift)}"
+            try:
+                mgm.items_by_species_and_gc[genome_tag][str(gc)].items[f"{output_tag_ws}_MAT"] = motif._motif[shift]
+                mgm.items_by_species_and_gc[genome_tag][str(gc)].items[f"{output_tag_ws}_POS_DISTR"] = motif._spacer[
+                shift]
+            except KeyError:
+                pass
 
-                mgm.items_by_species_and_gc[genome_tag][str(gc)].items[f"{output_tag_ws}"] = 1
-                mgm.items_by_species_and_gc[genome_tag][str(gc)].items[f"{output_tag_ws}_ORDER"] = 0
-                mgm.items_by_species_and_gc[genome_tag][str(gc)].items[f"{output_tag_ws}_WIDTH"] = width
-                mgm.items_by_species_and_gc[genome_tag][str(gc)].items[f"{output_tag_ws}_MARGIN"] = 0
-                mgm.items_by_species_and_gc[genome_tag][str(gc)].items[f"{output_tag_ws}_MAX_DUR"] = dur
-                mgm.items_by_species_and_gc[genome_tag][str(gc)].items[f"{output_tag_ws}_SHIFT"] = prob
-        else:
-            # promoter aren't shifted (for now)
-            best_shift = max(motif._shift_prior.items(), key=operator.itemgetter(1))[0]
-            mgm.items_by_species_and_gc[genome_tag][str(gc)].items[f"{output_tag}_MAT"] = motif._motif[best_shift]
-            mgm.items_by_species_and_gc[genome_tag][str(gc)].items[f"{output_tag}_POS_DISTR"] = motif._spacer[best_shift]
-
-            mgm.items_by_species_and_gc[genome_tag][str(gc)].items[f"{output_tag}"] = 1
-            mgm.items_by_species_and_gc[genome_tag][str(gc)].items[f"{output_tag}_ORDER"] = 0
-            mgm.items_by_species_and_gc[genome_tag][str(gc)].items[f"{output_tag}_WIDTH"] = width
-            mgm.items_by_species_and_gc[genome_tag][str(gc)].items[f"{output_tag}_MARGIN"] = 0
-            mgm.items_by_species_and_gc[genome_tag][str(gc)].items[f"{output_tag}_MAX_DUR"] = dur
+            mgm.items_by_species_and_gc[genome_tag][str(gc)].items[f"{output_tag_ws}"] = 1
+            mgm.items_by_species_and_gc[genome_tag][str(gc)].items[f"{output_tag_ws}_ORDER"] = 0
+            mgm.items_by_species_and_gc[genome_tag][str(gc)].items[f"{output_tag_ws}_WIDTH"] = width
+            mgm.items_by_species_and_gc[genome_tag][str(gc)].items[f"{output_tag_ws}_MARGIN"] = 0
+            mgm.items_by_species_and_gc[genome_tag][str(gc)].items[f"{output_tag_ws}_MAX_DUR"] = dur
+            mgm.items_by_species_and_gc[genome_tag][str(gc)].items[f"{output_tag_ws}_SHIFT"] = prob
 
 
 def build_mgm_models_from_gms2_models(env, df, mgm, **kwargs):
@@ -560,137 +550,72 @@ def build_mgm_models_from_gms2_models(env, df, mgm, **kwargs):
 
         visualize_start_codons(env, viz_collector)
 
-    if "Stop Codons" in components and False:
-        viz_collector = dict()
-
-        if genome_type == "Archaea":
-            output_group = ["A", "D"]
-            learn_from = learn_from_arc
-            viz_collector[genome_type] = dict()
-
-            for o, l in zip(output_group, learn_from):
-                viz_collector[genome_type][o] = dict()
-
-                df_curr = df[(df["Type"] == genome_type) & (df["GENOME_TYPE"].isin(l))]
-                add_stop_codon_probabilities(env, df_curr, mgm, genome_type=genome_type, plot=plot, gms2_group=o,
-                                             viz_collector=viz_collector[genome_type][o])
-        if genome_type == "Bacteria":
-            output_group = ["A", "B", "C", "X"]
-            learn_from = [{"A"}, {"B"}, {"C"}, {"A"}]
-            viz_collector[genome_type] = dict()
-
-            for o, l in zip(output_group, learn_from):
-                viz_collector[genome_type][o] = dict()
-
-                df_curr = df[(df["Type"] == genome_type) & (df["GENOME_TYPE"].isin(l))]
-                add_stop_codon_probabilities(env, df_curr, mgm, genome_type=genome_type, plot=plot, gms2_group=o,
-                                             viz_collector=viz_collector[genome_type][o])
-
-        visualize_stop_codons(env, viz_collector)
-
-    # if "Stop Codons" in components:
-    #     add_stop_codon_probabilities(df, mgm, genome_type=genome_type, plot=plot)
-        # add_stop_codon_probabilities(df, mgm, genome_type="Archaea", plot=plot)
-
-
-
-
     # Motifs
     if "RBS" in components:
+        df_type = df[df["Type"] == genome_type]
         if genome_type == "Archaea":
             output_group = ["A", "D"]
             learn_from = [{"A", "D"}, {"A", "D"}]
 
-            df_type = df[df["Type"] == genome_type]
-            for o, l in zip(output_group, learn_from):
-                add_motif_probabilities(
-                    env,
-                    df_type[(df_type["GENOME_TYPE"].isin(l))],
-                    mgm,
-                    "RBS", f"RBS_{o}", genome_type, plot=plot
-                )
         else:
             output_group = ["A", "B", "C", "X"]
             learn_from = [{"A"}, {"B"}, {"C"}, {"A"}]
 
-            df_type = df[df["Type"] == genome_type]
-            for o, l in zip(output_group, learn_from):
-                add_motif_probabilities(
-                    env,
-                    df_type[(df_type["GENOME_TYPE"].isin(l))],
-                    mgm,
-                    "RBS", f"RBS_{o}", genome_type, plot=plot
-                )
-
+        for o, l in zip(output_group, learn_from):
+            add_motif_probabilities(
+                env,
+                df_type[(df_type["GENOME_TYPE"].isin(l))],
+                mgm,
+                "RBS", f"RBS_{o}", genome_type, plot=plot
+            )
     if "Promoter" in components:
+        df_type = df[df["Type"] == genome_type]
         if genome_type == "Archaea":
             output_group = ["D"]
             learn_from = [{"D"}]  # always learn Promoter form group D
 
-            df_type = df[df["Type"] == genome_type]
-            for o, l in zip(output_group, learn_from):
-                add_motif_probabilities(
-                    env,
-                    df_type[(df_type["GENOME_TYPE"].isin(l))],
-                    mgm,
-                    "PROMOTER", f"PROMOTER_{o}", genome_type, plot=plot
-                )
         else:
             output_group = ["C"]
             learn_from = [{"C"}]  # always learn Promoter form group C
 
-            df_type = df[df["Type"] == genome_type]
-            for o, l in zip(output_group, learn_from):
-                add_motif_probabilities(
-                    env,
-                    df_type[(df_type["GENOME_TYPE"].isin(l))],
-                    mgm,
-                    "PROMOTER", f"PROMOTER_{o}", genome_type, plot=plot
-                )
-
+        for o, l in zip(output_group, learn_from):
+            add_motif_probabilities(
+                env,
+                df_type[(df_type["GENOME_TYPE"].isin(l))],
+                mgm,
+                "PROMOTER", f"PROMOTER_{o}", genome_type, plot=plot
+            )
     # Start Context
     if "Start Context" in components:
         if genome_type == "Archaea":
             output_group = ["A", "D"]
             learn_from = learn_from_arc
 
-            for o, l in zip(output_group, learn_from):
-                df_curr = df[(df["Type"] == genome_type) & (df["GENOME_TYPE"].isin(l))]
-                add_start_context_probabilities(df_curr, mgm, "SC_RBS", f"SC_RBS_{o}", genome_type=genome_type,
-                                                plot=plot)
         else:
             output_group = ["A", "B", "C", "X"]
             learn_from = [{"A"}, {"B"}, {"C"}, {"A"}]
 
-            for o, l in zip(output_group, learn_from):
-                df_curr = df[(df["Type"] == genome_type) & (df["GENOME_TYPE"].isin(l))]
-                add_start_context_probabilities(df_curr, mgm, "SC_RBS", f"SC_RBS_{o}", genome_type=genome_type,
-                                                plot=plot)
-
+        for o, l in zip(output_group, learn_from):
+            df_curr = df[(df["Type"] == genome_type) & (df["GENOME_TYPE"].isin(l))]
+            add_start_context_probabilities(df_curr, mgm, "SC_RBS", f"SC_RBS_{o}", genome_type=genome_type,
+                                            plot=plot)
         # promoter
         if genome_type == "Archaea":
             output_group = ["D"]
             learn_from = [{"A", "D"}]  # always learn RBS form group A
 
-            for o, l in zip(output_group, learn_from):
-                df_curr = df[(df["Type"] == genome_type) & (df["GENOME_TYPE"].isin(l))]
-
-                # NOTE: SC_PROMOTER is intentionally learned from SC_RBS. This is not a bug
-                # GMS2 has equal values for SC_RBS and SC_PROMOTER. Training from SC_RBS therefore allows us
-                # to learn from group A genomes as well.
-                add_start_context_probabilities(df_curr, mgm, "SC_RBS", f"SC_PROMOTER_{o}", genome_type=genome_type,
-                                                plot=plot)
         else:
             output_group = ["C"]
             learn_from = [{"C"}]
 
-            for o, l in zip(output_group, learn_from):
-                df_curr = df[(df["Type"] == genome_type) & (df["GENOME_TYPE"].isin(l))]
-                # NOTE: SC_PROMOTER is intentionally learned from SC_RBS. This is not a bug
-                # GMS2 has equal values for SC_RBS and SC_PROMOTER. Training from SC_RBS therefore allows us
-                # to learn from group A genomes as well.
-                add_start_context_probabilities(df_curr, mgm, "SC_RBS", f"SC_PROMOTER_{o}", genome_type=genome_type,
-                                                plot=plot)
+        for o, l in zip(output_group, learn_from):
+            df_curr = df[(df["Type"] == genome_type) & (df["GENOME_TYPE"].isin(l))]
+
+            # NOTE: SC_PROMOTER is intentionally learned from SC_RBS. This is not a bug
+            # GMS2 has equal values for SC_RBS and SC_PROMOTER. Training from SC_RBS therefore allows us
+            # to learn from group A genomes as well.
+            add_start_context_probabilities(df_curr, mgm, "SC_RBS", f"SC_PROMOTER_{o}", genome_type=genome_type,
+                                            plot=plot)
 
 
 def main(env, args):

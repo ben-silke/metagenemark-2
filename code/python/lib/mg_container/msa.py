@@ -35,10 +35,7 @@ class MSASinglePointMarker:
         # my_str = self.gap * self.mark_position + self.mark + self.gap * (self.msa_length - self.mark_position - 1)
         my_str = MSASinglePointMarker.create_mark_line(self.mark_position, self.msa_length, mark_tag=self.mark)
 
-        if begin != 0 or end != self.msa_length:
-            return my_str[begin:end]
-        else:
-            return my_str
+        return my_str[begin:end] if begin != 0 or end != self.msa_length else my_str
 
     def change_symbol(self, new_symbol, old_symbol=None):
         # type: (str, str) -> None
@@ -53,14 +50,15 @@ class MSASinglePointMarker:
         mark_tag = get_value(kwargs, "mark_tag", "M", invalid={None})
 
         if len(mark_tag) != 1:
-            raise ValueError("Mark tag ({}) should have length of 1".format(mark_tag))
+            raise ValueError(f"Mark tag ({mark_tag}) should have length of 1")
 
-        if mark_position is None:
-            mark_sequence = "-" * length
-        else:
-            mark_sequence = "-" * mark_position + mark_tag + "-" * (length - mark_position - 1)
-
-        return mark_sequence
+        return (
+            "-" * length
+            if mark_position is None
+            else "-" * mark_position
+            + mark_tag
+            + "-" * (length - mark_position - 1)
+        )
 
 
 class MSAType:
@@ -68,9 +66,9 @@ class MSAType:
     def __init__(self, alignments, **kwargs):
         # type: (MultipleSeqAlignment, Dict[str, Any]) -> None
 
-        self.list_msa_markers = get_value(kwargs, "list_msa_markers", list())      # type: List[MSASinglePointMarker]
+        self.list_msa_markers = get_value(kwargs, "list_msa_markers", [])
 
-        self.list_alignment_sequences = [s for s in alignments]           # type: List[SeqRecord]
+        self.list_alignment_sequences = list(alignments)
 
     def get_mark_position(self, name):
         # type: (str) -> Union[int, None]
@@ -78,7 +76,7 @@ class MSAType:
         mark = list_find_first(self.list_msa_markers, lambda x: x.name == name)  # type: MSASinglePointMarker
 
         if mark is None:
-            raise ValueError("Unknown mark name ({})".format(name))
+            raise ValueError(f"Unknown mark name ({name})")
 
         return mark.mark_position
 
@@ -136,8 +134,8 @@ class MSAType:
 
             return None
 
-        list_alignments_without_marks = list()
-        marks = list()
+        list_alignments_without_marks = []
+        marks = []
         msa_length = alignment.get_alignment_length()
 
         for a in alignment:
@@ -179,8 +177,8 @@ class MSAType:
 
         alignments_from_file = read_as_standard_clustal(pf_msa)
 
-        alignments_processed_list = list()
-        list_markers_info = list()
+        alignments_processed_list = []
+        list_markers_info = []
 
         for a in alignments_from_file:
             if a.id[0] != "#":
@@ -190,7 +188,7 @@ class MSAType:
                 non_gap_positions = [x for x in range(len(a.seq._data)) if a.seq._data[x] != "-"]
                 position = None
                 mark_tag = "M"
-                if len(non_gap_positions) > 0:
+                if non_gap_positions:
                     position = non_gap_positions[0]
                     mark_tag = a.seq._data[position]
 
@@ -225,11 +223,7 @@ class MSAType:
         for line in headers_split:
             val = int(float(line[1]))
 
-            if val == -1:
-                line[1] = "-"
-            else:
-                line[1] = "{}".format(val)
-
+            line[1] = "-" if val == -1 else "{}".format(val)
         # remove dN column
         headers_split = [
             line_split[:min(len(line_split), 5)] for line_split in headers_split
@@ -247,7 +241,7 @@ class MSAType:
             max(len(l[col]) for l in headers_split if col < len(l)) for col in range(max_num_columns)
         ]
 
-        headers_pretty = list()
+        headers_pretty = []
 
         for line_split in headers_split:
             headers_pretty.append(
@@ -271,7 +265,7 @@ class MSAType:
             marker = self.get_marker(marker_name)
             marker.change_symbol(new_symbol)
         except ValueError:
-            logger.warning("Cannot change marker for unknown name: {}".format(marker_name))
+            logger.warning(f"Cannot change marker for unknown name: {marker_name}")
 
 
 
@@ -319,7 +313,7 @@ class MSAType:
 
             ref_position = self.get_mark_position("ref")
 
-            is_lorf = len(set(self[0][0:ref_position])) <= 1
+            is_lorf = len(set(self[0][:ref_position])) <= 1
 
             def count_lorf_targets_near_position(position):
                 # type: (int) -> int
@@ -330,11 +324,11 @@ class MSAType:
                     j = 0
                     while True:
                         if position-j >= 0 and self[idx][position-j].isupper():
-                            if len(set(self[idx][0:position-j])) <= 1:
+                            if len(set(self[idx][: position - j])) <= 1:
                                 count += 1
                             break
                         if position+j < self.alignment_length() and self[idx][position+j].isupper():
-                            if len(set(self[idx][0:position+j])) <= 1:
+                            if len(set(self[idx][: position + j])) <= 1:
                                 count += 1
                             break
 
@@ -364,7 +358,8 @@ class MSAType:
 
         # add markers as sequence records
         seq_records = [
-            SeqRecord(Seq(m.to_string(begin, end)), id="#{}".format(m.name)) for m in self.list_msa_markers
+            SeqRecord(Seq(m.to_string(begin, end)), id=f"#{m.name}")
+            for m in self.list_msa_markers
         ]
 
         if begin is not None or end is not None:

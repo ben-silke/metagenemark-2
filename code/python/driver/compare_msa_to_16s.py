@@ -72,7 +72,11 @@ def best_match_to_16s(seq_16s, consensus):
     bm_score = 0
     for curr_pos in range(len(seq_16s)-len(consensus)):
 
-        curr_score = sum([1 for i in range(len(consensus)) if consensus[i] == seq_16s[curr_pos+i]])
+        curr_score = sum(
+            1
+            for i in range(len(consensus))
+            if consensus[i] == seq_16s[curr_pos + i]
+        )
 
         if curr_score > bm_score:
             bm_score = curr_score
@@ -83,13 +87,13 @@ def best_match_to_16s(seq_16s, consensus):
 def best_shifts_to_16s(seq_16s, df, col):
     # type: (str, pd.DataFrame, str) -> None
 
-    list_pos = list()
+    list_pos = []
     for idx in df.index:
         consensus = df.at[idx, "CONSENSUS_RBS_MAT"]
         list_pos.append(best_match_to_16s(seq_16s, consensus))
 
     df[col] = list_pos
-    df[col] = df[col] - min(df[col])
+    df[col] -= min(df[col])
 
 
 def compare_msa_to_16s(env, df, seq_16s, **kwargs):
@@ -103,7 +107,7 @@ def compare_msa_to_16s(env, df, seq_16s, **kwargs):
     df[f"CONSENSUS_{name}"] = df.apply(lambda r: get_consensus_sequence(r["Mod"].items[name]), axis=1)
 
     # df = df[(df["GC"] > gc_range[0]) & (df["GC"] < gc_range[1])]
-    print([x for x in df["CONSENSUS_RBS_MAT"].value_counts().items()])
+    print(list(df["CONSENSUS_RBS_MAT"].value_counts().items()))
     df = df[df["CONSENSUS_RBS_MAT"] == "AAAAAA"]
     # if group:
     #     df = df[df["GENOME_TYPE"] == group]

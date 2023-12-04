@@ -51,7 +51,7 @@ logger = logging.getLogger("logger")  # type: logging.Logger
 def stats_tools_on_chunks(env, df):
     # type: (Environment, pd.DataFrame) -> pd.DataFrame
 
-    list_entries = list()
+    list_entries = []
 
     for idx in tqdm(df.index, total=len(df)):
         pf_prediction = df.at[idx, "Predictions"]

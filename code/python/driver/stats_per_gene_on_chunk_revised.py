@@ -102,7 +102,7 @@ def apply_genome_splitter_to_labels(seqname_to_info, labels):
         for s, list_info in seqname_to_info.items()
     }
 
-    list_labels = list()
+    list_labels = []
 
     for lab in labels:
         overlapping = seqname_to_interval_tree[lab.seqname()].overlap(lab.left(), lab.right() + 1)
@@ -164,17 +164,8 @@ def apply_genome_splitter_to_labels(seqname_to_info, labels):
             left_chunk = seqname_to_interval_tree[lab.seqname()][lab.left()]
             right_chunk = seqname_to_interval_tree[lab.seqname()][lab.right()]
 
-            if len(left_chunk) == 0:
-                left_chunk = None
-            else:
-                left_chunk = left_chunk.pop().data
-
-            if len(right_chunk) == 0:
-                right_chunk = None
-            else:
-                right_chunk = right_chunk.pop().data
-
-
+            left_chunk = None if len(left_chunk) == 0 else left_chunk.pop().data
+            right_chunk = None if len(right_chunk) == 0 else right_chunk.pop().data
             if left_chunk == right_chunk:
                 # no splitting
                 list_labels.append(lab)
@@ -247,25 +238,18 @@ def has_same_3prime_end(partial, full):
     if strand == "+":
         # partial at 3prime end
         if partial.incomplete_at_3prime():
-            if full.right() >= partial.right()-buffer:
-                return True
-            else:
-                return False
+            return full.right() >= partial.right()-buffer
         elif full.incomplete_at_3prime():
-            if partial.right() >= full.right()-buffer:
-                return True
-            else:
-                return False
+            return partial.right() >= full.right()-buffer
         else:
             # both complete
             return partial.right() == full.right()
+    elif partial.incomplete_at_3prime():
+        return full.left() <= partial.left()+buffer
+    elif full.incomplete_at_3prime():
+        return partial.left() <= full.left()+buffer
     else:
-        if partial.incomplete_at_3prime():
-            return full.left() <= partial.left()+buffer
-        elif full.incomplete_at_3prime():
-            return partial.left() <= full.left()+buffer
-        else:
-            return partial.left() == full.left()
+        return partial.left() == full.left()
 
 # def has_same_5prime_and_3prime_end(partial, full):
 #     # type: (Label, Label) -> bool
@@ -300,10 +284,7 @@ def compare_chunked_prediction_to_annotation(env, labels_pred, labels_ref_fp, la
         # first, get interval where this label exists
         if lab.seqname() in ref_intervals and lab.strand() in ref_intervals[lab.seqname()]:
             overlaps = ref_intervals[lab.seqname()][lab.strand()].overlap(lab.left(), lab.right())
-            if len(overlaps) == 0:
-                # result["FP"] += 1
-                pass
-            else:
+            if len(overlaps) != 0:
                 largest_overlap, score = get_interval_with_largest_overlap(lab, overlaps)
 
                 if has_same_3prime_end(lab, largest_overlap.data):
@@ -362,14 +343,13 @@ def filter_labels_shorter_than(labels, threshold_nt, threshold_nt_partial=None):
     if threshold_nt_partial is None:
         threshold_nt_partial = threshold_nt
 
-    list_labels = list()
+    list_labels = []
     for lab in labels:
         if lab.is_partial():
             if lab.length() >= threshold_nt_partial:
                 list_labels.append(lab)
-        else:
-            if lab.length() >= threshold_nt:
-                list_labels.append(lab)
+        elif lab.length() >= threshold_nt:
+            list_labels.append(lab)
 
     return Labels(list_labels, name=labels.name)
 
@@ -393,7 +373,7 @@ def stats_per_gene_on_chunks_for_genome(env, df_summary_genome, reference_tools_
     reference_tools_fn = sorted(reference_tools_fn) if isinstance(reference_tools_fn, list) else reference_tools_fn
     min_gene_length_nt = get_value(kwargs, "min_gene_length_nt", 90)
 
-    list_entries = list()
+    list_entries = []
     for genome, df_genome in df_summary_genome.groupby("Genome", as_index=False):
 
         pf_sequence = os_join(env["pd-data"], genome, "sequence.fasta")
@@ -423,7 +403,7 @@ def stats_per_gene_on_chunks_for_genome(env, df_summary_genome, reference_tools_
         ref_labels_fp = filter_labels_shorter_than(ref_labels_fp, min_gene_length_nt)
 
 
-        for chunk_size, df_chunk in df_genome.groupby("Chunk Size", as_index=False):        # type: int, pd.DataFrame
+        for chunk_size, df_chunk in df_genome.groupby("Chunk Size", as_index=False):# type: int, pd.DataFrame
 
             # read all label files for chunk
             tool_to_labels = {
@@ -464,73 +444,74 @@ def stats_per_gene_on_chunks_for_genome(env, df_summary_genome, reference_tools_
             chunked_ref_labels_fn = apply_genome_splitter_to_labels(seqname_to_chunks, ref_labels_fn)
             chunked_ref_labels_fp = apply_genome_splitter_to_labels(seqname_to_chunks, ref_labels_fp)
 
-            for t in tool_to_labels:
-                # if t != "mgm2":
-                #     continue
-                list_entries.append(
-                    {
-                        "Genome": genome,
-                        "Tool": t,
-                        "Genome GC": genome_gc,
-                        "Chunk Size": chunk_size,
-                        **compare_chunked_prediction_to_annotation(env, tool_to_labels[t], chunked_ref_labels_fp,
-                                                                   chunked_ref_labels_fn)
-                    }
-                )
+            list_entries.extend(
+                {
+                    "Genome": genome,
+                    "Tool": t,
+                    "Genome GC": genome_gc,
+                    "Chunk Size": chunk_size,
+                    **compare_chunked_prediction_to_annotation(
+                        env,
+                        value,
+                        chunked_ref_labels_fp,
+                        chunked_ref_labels_fn,
+                    ),
+                }
+                for t, value in tool_to_labels.items()
+            )
+                    #
+                    # # Add prediction info to dataframe
+                    #
+                    # name_to_labels = copy.copy(tool_to_labels)
+                    # name_to_labels.update(chunked_reference_labels)
+                    #
+                    # all_labels = list(chunked_reference_labels.values()) + list(tool_to_labels.values())
+                    # keys_3prime = get_unique_gene_keys(*all_labels)        # all 3prime keys
+                    #
 
-            #
-            # # Add prediction info to dataframe
-            #
-            # name_to_labels = copy.copy(tool_to_labels)
-            # name_to_labels.update(chunked_reference_labels)
-            #
-            # all_labels = list(chunked_reference_labels.values()) + list(tool_to_labels.values())
-            # keys_3prime = get_unique_gene_keys(*all_labels)        # all 3prime keys
-            #
 
 
 
-
-            # # Each gene key will have a row in the dataframe
-            # # Columns will indicate whether it was 3p and 5p were predicted by each tool
-            # for key in keys_3prime:
-            #     entry = dict()
-            #
-            #
-            #
-            #     shortest_label = None
-            #     for t in name_to_labels.keys():
-            #
-            #         label = name_to_labels[t].get_by_3prime_key(key)
-            #         if label is None:
-            #             entry[f"5p-{t}"] = None  # 5prime end
-            #             entry[f"3p-{t}"] = None
-            #         else:
-            #             entry[f"5p-{t}"] = label.get_5prime()
-            #             entry[f"3p-{t}"] = label.get_3prime()
-            #             if shortest_label is None:
-            #                 shortest_label = label
-            #             elif shortest_label.length() < label.length():
-            #                 shortest_label = label
-            #
-            #             entry[f"Partial3p-{t}"] = label.incomplete_at_3prime()
-            #             entry[f"Partial5p-{t}"] = label.incomplete_at_5prime()
-            #
-            #
-            #
-            #     # compute GC of label
-            #     gene_gc = 0 # compute_gc(sequences, shortest_label)
-            #
-            #     list_entries.append({
-            #         "3p-key": key,
-            #         "Genome": genome,
-            #         "Genome GC": genome_gc,
-            #         "Gene GC": gene_gc,
-            #         "Chunk Size": chunk_size,
-            #         "Runtime": df_chunk["Runtime"].mean(),
-            #         "Clade": clade,
-            #         **entry
-            #     })
+                    # # Each gene key will have a row in the dataframe
+                    # # Columns will indicate whether it was 3p and 5p were predicted by each tool
+                    # for key in keys_3prime:
+                    #     entry = dict()
+                    #
+                    #
+                    #
+                    #     shortest_label = None
+                    #     for t in name_to_labels.keys():
+                    #
+                    #         label = name_to_labels[t].get_by_3prime_key(key)
+                    #         if label is None:
+                    #             entry[f"5p-{t}"] = None  # 5prime end
+                    #             entry[f"3p-{t}"] = None
+                    #         else:
+                    #             entry[f"5p-{t}"] = label.get_5prime()
+                    #             entry[f"3p-{t}"] = label.get_3prime()
+                    #             if shortest_label is None:
+                    #                 shortest_label = label
+                    #             elif shortest_label.length() < label.length():
+                    #                 shortest_label = label
+                    #
+                    #             entry[f"Partial3p-{t}"] = label.incomplete_at_3prime()
+                    #             entry[f"Partial5p-{t}"] = label.incomplete_at_5prime()
+                    #
+                    #
+                    #
+                    #     # compute GC of label
+                    #     gene_gc = 0 # compute_gc(sequences, shortest_label)
+                    #
+                    #     list_entries.append({
+                    #         "3p-key": key,
+                    #         "Genome": genome,
+                    #         "Genome GC": genome_gc,
+                    #         "Gene GC": gene_gc,
+                    #         "Chunk Size": chunk_size,
+                    #         "Runtime": df_chunk["Runtime"].mean(),
+                    #         "Clade": clade,
+                    #         **entry
+                    #     })
 
 
     print(pd.DataFrame(list_entries).to_csv())
@@ -605,7 +586,7 @@ def main(env, args):
         df.reset_index(inplace=True)
         bs = args.batch_size
 
-        list_df = list([x[1] for x in df.groupby("Genome", as_index=False)])
+        list_df = [x[1] for x in df.groupby("Genome", as_index=False)]
 
         start = 0
         end = min(bs, len(list_df))

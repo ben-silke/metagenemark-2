@@ -121,32 +121,25 @@ class LabelsComparisonDetailed:
             "b": Labels([x[1] for x in compare_3p["match"].values()])
         }
         comparison["labels"]["match-3p-not-5p"] = {
-            "a": Labels([x for x in compare_3p_5p["unique-a"].values()]),
-            "b": Labels([x for x in compare_3p_5p["unique-b"].values()])
+            "a": Labels(list(compare_3p_5p["unique-a"].values())),
+            "b": Labels(list(compare_3p_5p["unique-b"].values())),
         }
         return comparison
 
     @staticmethod
     def _split_by_match_3prime(key_3prime_to_label_a, key_3prime_to_label_b):
-        # type: (Dict[str, Label], Dict[str, Label]) -> Dict[str, Dict[str, Any]]
-        result = {
-            "match": dict(),
-            "unique-a": dict(),
-            "unique-b": dict()
-        }
-
         keys_match = set(key_3prime_to_label_a.keys()).intersection(set(key_3prime_to_label_b.keys()))
         keys_unique_a = set(key_3prime_to_label_a.keys()).difference(set(key_3prime_to_label_b.keys()))
         keys_unique_b = set(key_3prime_to_label_b.keys()).difference(set(key_3prime_to_label_a.keys()))
 
-        result["match"] = {
-            key: (key_3prime_to_label_a[key], key_3prime_to_label_b[key]) for key in keys_match
+        return {
+            "match": {
+                key: (key_3prime_to_label_a[key], key_3prime_to_label_b[key])
+                for key in keys_match
+            },
+            "unique-a": {key: key_3prime_to_label_a[key] for key in keys_unique_a},
+            "unique-b": {key: key_3prime_to_label_b[key] for key in keys_unique_b},
         }
-
-        result["unique-a"] = {key: key_3prime_to_label_a[key] for key in keys_unique_a}
-        result["unique-b"] = {key: key_3prime_to_label_b[key] for key in keys_unique_b}
-
-        return result
 
     @staticmethod
     def _split_by_match_5prime(key_to_pair_3p):
@@ -186,10 +179,10 @@ class LabelsComparisonDetailed:
             b = letter[1]  # bad
 
             good_and_bad += [
-                ("in-{}".format(g), "in_{}".format(b)),
-                ("long-in-{}".format(g), "long_in_{}".format(b)),
-                ("short-in-{}".format(g), "short_in_{}".format(b)),
-                ("unique-in-{}".format(g), "unique_in_{}".format(b)),
+                (f"in-{g}", f"in_{b}"),
+                (f"long-in-{g}", f"long_in_{b}"),
+                (f"short-in-{g}", f"short_in_{b}"),
+                (f"unique-in-{g}", f"unique_in_{b}"),
             ]
 
         self.stats = {goodname: d[badname] for goodname, badname in good_and_bad}

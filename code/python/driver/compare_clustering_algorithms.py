@@ -120,7 +120,9 @@ def load_gms2_models_from_pickle(pf_mods):
     df["Type"] = "Bacteria"
 
     df.reset_index(inplace=True)
-    df[f"CONSENSUS_RBS_MAT"] = df.apply(lambda r: get_consensus_sequence(r["Mod"].items["RBS_MAT"]), axis=1)
+    df["CONSENSUS_RBS_MAT"] = df.apply(
+        lambda r: get_consensus_sequence(r["Mod"].items["RBS_MAT"]), axis=1
+    )
 
     df["GENOME_TYPE"] = df.apply(lambda r: r["Mod"].items["GENOME_TYPE"], axis=1)
     # df["GC"] = df.apply(lambda r: r["Mod"].items["GC"], axis=1)
@@ -150,13 +152,13 @@ def merge_spacers_by_peak(df):
         for l in list_pos_dist:
             peak = max(l, key=lambda key: l[key])  # get position of peak
             if peak not in peak_to_list_pos_dist:
-                peak_to_list_pos_dist[peak] = list()
+                peak_to_list_pos_dist[peak] = []
             peak_to_list_pos_dist[peak].append(l)
 
         # average positions (per peak)
         values = dict()
         peak_counter = 0
-        for peak in peak_to_list_pos_dist.keys():
+        for peak in peak_to_list_pos_dist:
             values[peak] = dict()
             peak_counter = peak
             peak_prior_per_shift[s][peak_counter] = len(peak_to_list_pos_dist[peak])
@@ -165,11 +167,11 @@ def merge_spacers_by_peak(df):
                 try:
                     for i in l.keys():
                         if i not in values[peak].keys():
-                            values[peak][i] = list()
+                            values[peak][i] = []
                         values[peak][i].append(l[i])
 
                         if i not in total_merged:
-                            total_merged[i] = list()
+                            total_merged[i] = []
                         total_merged[i].append(l[i])
 
 
@@ -186,9 +188,7 @@ def merge_spacers_by_peak(df):
             x = sorted(values[peak].keys())
             y = [values[peak][a] for a in x]
 
-            position_distributions_by_shift_by_peak[s][peak_counter] = {
-                a: b for a, b in zip(x, y)
-            }
+            position_distributions_by_shift_by_peak[s][peak_counter] = dict(zip(x, y))
 
             peak_counter += 1
 
@@ -198,11 +198,11 @@ def merge_spacers_by_peak(df):
             for pc in peak_prior_per_shift[s].keys():
                 peak_prior_per_shift[s][pc] /= float(total)
 
-    for i in total_merged.keys():
+    for i in total_merged:
         total_merged[i] = np.mean(total_merged[i])
 
     total = sum(total_merged.values())
-    for i in total_merged.keys():
+    for i in total_merged:
         total_merged[i] /= total
 
     return position_distributions_by_shift_by_peak[0], peak_prior_per_shift[0], total_merged

@@ -127,7 +127,7 @@ class TaxonomyTree:
         logger.info("Get names of nodes")
         dict_taxid_names = TaxonomyTree._get_names_per_taxid(df_names)
 
-        root_nodes = list()
+        root_nodes = []
 
         # add each node to its parent's children
         for tax_id, node in tqdm(dict_tax_id_node.items(), "Building tree"):
@@ -148,7 +148,7 @@ class TaxonomyTree:
 
         if len(root_nodes) > 1:
             raise ValueError("More than one root node available")
-        if len(root_nodes) == 0:
+        if not root_nodes:
             raise ValueError("No root node detected")
 
         return TaxonomyTree(root_nodes[0])
@@ -202,14 +202,10 @@ class TaxonomyTree:
         attribute_name = get_value(kwargs, "attribute_name", None)
         attribute_format = get_value(kwargs, "attribute_format", "{}", default_if_none=True)
 
-        output = ""
-
         single_level = "    |"
         depth_level = single_level * depth
 
-        if depth > 0:
-            output = depth_level + "__ "
-
+        output = depth_level + "__ " if depth > 0 else ""
         # get tag
         tag_value = node.tax_id
         if tag_name is not None:
@@ -218,7 +214,7 @@ class TaxonomyTree:
         output += str(tag_value)
 
         if attribute_name is not None:
-            output += "\t({})".format(attribute_format).format(node.attributes[attribute_name])
+            output += f"\t({attribute_format})".format(node.attributes[attribute_name])
 
         return output
 
@@ -292,11 +288,9 @@ class TaxonomyTree:
 
         current_node = self.root
 
-        lifo = list()
+        lifo = [current_node]
 
-        lifo.append(current_node)
-
-        while len(lifo) > 0:
+        while lifo:
             p = lifo.pop()
 
             # if is node we're searching for
@@ -304,20 +298,16 @@ class TaxonomyTree:
                 return p
 
             # otherwise add all children
-            for child in p.children():
-                lifo.append(child)
-
+            lifo.extend(iter(p.children()))
         return None
 
     @staticmethod
     def get_leaves_under_node(node):
         # type: (Node) -> Generator[Node]
 
-        lifo = list()
+        lifo = [node]
 
-        lifo.append(node)
-
-        while len(lifo) > 0:
+        while lifo:
             p = lifo.pop()
 
             # if is leaf
@@ -325,8 +315,7 @@ class TaxonomyTree:
                 yield p
 
             # otherwise add all children
-            for child in p.children():
-                lifo.append(child)
+            lifo.extend(iter(p.children()))
 
     def get_genomes_under_ancestor(self, ancestor_tag, tag_type):
         # type: (Union[str, int], str) -> Generator[Dict[str, Any]]
@@ -334,7 +323,7 @@ class TaxonomyTree:
         ancestor_node = self.get_node_with_tag(ancestor_tag, tag_type)
 
         if ancestor_tag is None:  # empty generator
-            return (_ for _ in ())
+            return iter(())
 
         for curr_node in TaxonomyTree.get_leaves_under_node(ancestor_node):
             yield curr_node.attributes
@@ -343,18 +332,15 @@ class TaxonomyTree:
     def get_nodes_under_ancestor(node):
         # type: (Node) -> Generator[Node]
 
-        lifo = list()
+        lifo = [node]
 
-        lifo.append(node)
-
-        while len(lifo) > 0:
+        while lifo:
             p = lifo.pop()
 
             yield p
 
             # otherwise add all children
-            for child in p.children():
-                lifo.append(child)
+            lifo.extend(iter(p.children()))
 
     def get_possible_genomes_under_ancestor(self, ancestor_tag, tag_type):
         # type: (Union[str, int], str) -> Generator[Dict[str, Any]]
@@ -362,7 +348,7 @@ class TaxonomyTree:
         ancestor_node = self.get_node_with_tag(ancestor_tag, tag_type)
 
         if ancestor_node is None:  # empty generator
-            return (_ for _ in ())
+            return iter(())
 
         for curr_node in TaxonomyTree.get_nodes_under_ancestor(ancestor_node):
             if curr_node is not None:

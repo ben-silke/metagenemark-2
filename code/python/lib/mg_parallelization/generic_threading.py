@@ -13,7 +13,7 @@ logger=log
 def wait_for_all(active_threads):
     # type: (List[threading.Thread]) -> List[threading.Thread]
 
-    done_threads = list()
+    done_threads = []
     while True:
         if len(active_threads) == 0:
             break
@@ -68,7 +68,7 @@ class GenericThreadN(threading.Thread):
         self._thread_id = get_value(kwargs, "thread_id", self.ident)
 
     def run(self):
-        list_outputs = list()
+        list_outputs = []
         for func_kwargs in self._list_func_kwargs:
             output = self._func(**func_kwargs)
 
@@ -84,18 +84,16 @@ def run_one_per_thread(data, func, data_arg_name, func_kwargs, **kwargs):
 
     simultaneous_runs = get_value(kwargs, "simultaneous_runs", 8)
 
-    active_threads = list()
-    thread_id = 0
+    active_threads = []
     output = dict()  # type: Dict[Any, List[Any]]
 
 
-    for dp in data:
+    for thread_id, dp in enumerate(data):
 
         # Create a thread for genome and run
         thread = GenericThread(func, {data_arg_name: dp, **func_kwargs},
                                output=output, thread_id=thread_id)
         thread.start()
-        thread_id += 1
         active_threads.append(thread)
         logger.debug(f"Number of active threads: {len(active_threads)}")
 
@@ -107,9 +105,7 @@ def run_one_per_thread(data, func, data_arg_name, func_kwargs, **kwargs):
 
     wait_for_all(active_threads)
 
-    return [
-        l for l in output.values()
-    ]
+    return list(output.values())
 
 
 def run_n_per_thread(data, func, data_arg_name, func_kwargs, **kwargs):
@@ -125,7 +121,7 @@ def run_n_per_thread(data, func, data_arg_name, func_kwargs, **kwargs):
     if n * simultaneous_runs > len(data):
         n = math.ceil(len(data) / simultaneous_runs)
 
-    active_threads = list()
+    active_threads = []
     thread_id = 0
 
     thread_kwargs = dict()
@@ -137,7 +133,7 @@ def run_n_per_thread(data, func, data_arg_name, func_kwargs, **kwargs):
             thread_id += 1
 
         # get n datapoints
-        infos = list()
+        infos = []
         counter = 0
         while i < len(data):
             infos.append({
@@ -159,7 +155,7 @@ def run_n_per_thread(data, func, data_arg_name, func_kwargs, **kwargs):
         if len(active_threads) >= simultaneous_runs:
             wait_for_any(active_threads)
 
-        # time.sleep(5)
+            # time.sleep(5)
 
     wait_for_all(active_threads)
 
@@ -181,7 +177,7 @@ def run_slice_per_thread(data, func, data_arg_name, func_kwargs, **kwargs):
     if n * simultaneous_runs > len(data):
         n = math.ceil(len(data) / simultaneous_runs)
 
-    active_threads = list()
+    active_threads = []
     thread_id = 0
 
     thread_kwargs = {}

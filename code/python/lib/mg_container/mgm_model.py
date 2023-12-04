@@ -91,18 +91,15 @@ class MGMModel:
 
             curr_word = words[position]
 
+            position += 1
             if curr_word.startswith("__"):
                 species, _, gc = curr_word[2:].split("_")
-                position += 1
                 mgm_model_gc, position = MGMModel._read_mgm_model_gc(words, position, gc)
 
                 if species not in result.keys():
                     result[species] = dict()
 
                 result[species][gc] = mgm_model_gc
-            else:
-                position += 1
-
         return cls(result)
 
     @staticmethod
@@ -116,7 +113,7 @@ class MGMModel:
         """
 
         num_words = len(words)
-        result = list()
+        result = []
 
         while position < num_words:
             curr_word = words[position]
@@ -143,13 +140,12 @@ class MGMModel:
 
                 if len(value) == 1:
                     result[tag] = value[0]
+                elif tag.endswith("_MAT"):
+                    result[tag] = convert_to_matrix(value)
+                elif tag.endswith("_POS_DISTR"):
+                    result[tag] = convert_to_position_distribution(value)
                 else:
-                    if tag.endswith("_MAT"):
-                        result[tag] = convert_to_matrix(value)
-                    elif tag.endswith("_POS_DISTR"):
-                        result[tag] = convert_to_position_distribution(value)
-                    else:
-                        log.warning(f"Unknown format for tag: {tag}")
+                    log.warning(f"Unknown format for tag: {tag}")
             elif curr_word.startswith("__"):
                 break
             else:

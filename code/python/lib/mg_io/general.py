@@ -15,9 +15,7 @@ def mkdir_p(path):
     try:
         os.makedirs(path)
     except OSError as exc:
-        if exc.errno == errno.EEXIST and os.path.isdir(path):
-            pass
-        else:
+        if exc.errno != errno.EEXIST or not os.path.isdir(path):
             raise
 
 
@@ -49,5 +47,4 @@ def load_obj(name):
         name += ".pkl"
 
     with open(name, 'rb') as f:
-        loaded_data = dill.load(f)
-        return loaded_data
+        return dill.load(f)

@@ -70,15 +70,13 @@ def visualize_motif(env, mgm, genome_type, tag, **kwargs):
 
     gc_mod_pair = dict()  # type: Dict[float, MGMModelGC]
 
-    for i, gc_tag in enumerate(all_gc_tags):
+    for gc_tag in all_gc_tags:
         mgm_mod_gc = mgm.items_by_species_and_gc[genome_type[0]][gc_tag]
 
-        if f"{tag}_MAT" not in mgm_mod_gc.items.keys():
-            continue
+        if f"{tag}_MAT" in mgm_mod_gc.items.keys():
+            gc_mod_pair[gc_tag] = mgm_mod_gc
 
-        gc_mod_pair[gc_tag] = mgm_mod_gc
-
-    if len(gc_mod_pair) == 0:
+    if not gc_mod_pair:
         return
 
     fig, axes = plt.subplots(num_rows, num_cols, sharex="all", sharey="all")
@@ -90,7 +88,7 @@ def visualize_motif(env, mgm, genome_type, tag, **kwargs):
 
         mgm_mod_gc = gc_mod_pair[gc_tag]
         motif_mat = MotifModel(mgm_mod_gc.items[f"{tag}_MAT"], mgm_mod_gc.items[f"{tag}_POS_DISTR"])
-        nonc_mat = GMS2Noncoding(mgm_mod_gc.items[f"NON_MAT"])
+        nonc_mat = GMS2Noncoding(mgm_mod_gc.items["NON_MAT"])
 
         df_motif_mat = motif_mat.pwm_to_df()
         np_nonc_mat = nonc_mat.pwm_to_array(0)
@@ -107,7 +105,7 @@ def visualize_motif(env, mgm, genome_type, tag, **kwargs):
 
         # spacer
         ax = axes_sp.ravel()[i]
-        x = [a for a in range(len(motif_mat._spacer))]
+        x = list(range(len(motif_mat._spacer)))
         y = motif_mat._spacer
         seaborn.lineplot(x, y, ax=ax)
 
@@ -127,20 +125,36 @@ def visualize_start_context(env, mgm, genome_type, tag, **kwargs):
     all_gc_tags = sorted(mgm.items_by_species_and_gc[genome_type[0]])
 
     # get all possible words in start contexts
-    all_words = sorted(set(
-        w for gc_tag in all_gc_tags
-        for w in mgm.items_by_species_and_gc[genome_type[0]][gc_tag].items[f"{tag}_MAT"]
-        if f"{tag}_MAT" in mgm.items_by_species_and_gc[genome_type[0]][gc_tag].items
+    all_words = sorted(
+        {
+            w
+            for gc_tag in all_gc_tags
+            for w in mgm.items_by_species_and_gc[genome_type[0]][gc_tag].items[
+                f"{tag}_MAT"
+            ]
+            if f"{tag}_MAT"
+            in mgm.items_by_species_and_gc[genome_type[0]][gc_tag].items
+        }
+    )
 
-    ))
-
-    all_positions = sorted(set(
-        p for gc_tag in all_gc_tags
-        for w in mgm.items_by_species_and_gc[genome_type[0]][gc_tag].items[f"{tag}_MAT"]
-        if f"{tag}_MAT" in mgm.items_by_species_and_gc[genome_type[0]][gc_tag].items
-        for p in range(len(mgm.items_by_species_and_gc[genome_type[0]][gc_tag].items[f"{tag}_MAT"][w]))
-
-    ))
+    all_positions = sorted(
+        {
+            p
+            for gc_tag in all_gc_tags
+            for w in mgm.items_by_species_and_gc[genome_type[0]][gc_tag].items[
+                f"{tag}_MAT"
+            ]
+            if f"{tag}_MAT"
+            in mgm.items_by_species_and_gc[genome_type[0]][gc_tag].items
+            for p in range(
+                len(
+                    mgm.items_by_species_and_gc[genome_type[0]][gc_tag].items[
+                        f"{tag}_MAT"
+                    ][w]
+                )
+            )
+        }
+    )
 
     if len(all_words) == 0:
         return
@@ -153,8 +167,8 @@ def visualize_start_context(env, mgm, genome_type, tag, **kwargs):
         for i, w in tqdm(enumerate(all_words), f"Words in position {p}", total=len(all_words), leave=True, position=2):
             ax = axes.ravel()[i]
 
-            x = list()
-            y = list()
+            x = []
+            y = []
 
             for gc_tag in all_gc_tags:
                 mod = mgm.items_by_species_and_gc[genome_type[0]][gc_tag]
@@ -181,8 +195,8 @@ def visualize_start_codons(env, mgm, genome_type, gms2_group, **kwargs):
     fig, axes = plt.subplots()
 
     for s in starts:
-        x = list()
-        y = list()
+        x = []
+        y = []
 
         for gc_tag in all_gc_tags:
             mod = mgm.items_by_species_and_gc[genome_type[0]][gc_tag]

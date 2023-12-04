@@ -16,7 +16,7 @@ log = logging.getLogger(__name__)
 def get_stats_at_gcfid_level_with_reference(df, tools, reference):
     # type: (pd.DataFrame, List[str], str) -> pd.DataFrame
 
-    list_entries = list()
+    list_entries = []
 
     for gcfid, df_group in df.groupby("Genome", as_index=False):
 
@@ -62,10 +62,10 @@ def _helper_join_reference_and_tidy_data(env, df_per_gene, tools, list_ref):
     reference = _helper_df_joint_reference(df_per_gene, list_ref)
     df_per_gene = update_dataframe_with_stats(df_per_gene, tools, reference).copy()
 
-    #### Genome Level: compute stats per genome
-    df_stats_gcfid = list()
-    for _, df_group in df_per_gene.groupby("Genome", as_index=False):
-        df_stats_gcfid.append(get_stats_at_gcfid_level_with_reference(df_group, tools, reference))
+    df_stats_gcfid = [
+        get_stats_at_gcfid_level_with_reference(df_group, tools, reference)
+        for _, df_group in df_per_gene.groupby("Genome", as_index=False)
+    ]
     df_per_genome = pd.concat(df_stats_gcfid, ignore_index=True, sort=False)
 
     ### Tidy Data and filter out those not present in tools or reference

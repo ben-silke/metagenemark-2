@@ -48,7 +48,7 @@ def viz_motif_and_spacer(env, mod, motif, **kwargs):
     # type: (Environment, GMS2Mod, str, Dict[str, Any]) -> None
 
     motif_mat = MotifModel(mod.items[f"{motif}_MAT"], mod.items[f"{motif}_POS_DISTR"])
-    nonc_mat = GMS2Noncoding(mod.items[f"NON_MAT"])
+    nonc_mat = GMS2Noncoding(mod.items["NON_MAT"])
 
     df_motif_mat = motif_mat.pwm_to_df()
     np_nonc_mat = nonc_mat.pwm_to_array(0)
@@ -68,7 +68,7 @@ def viz_motif_and_spacer(env, mod, motif, **kwargs):
 
     # Plot spacer
     ax = ax_spacer
-    x = [a for a in range(len(motif_mat._spacer))]
+    x = list(range(len(motif_mat._spacer)))
     y = motif_mat._spacer
     seaborn.lineplot(x, y, ax=ax)
 

@@ -56,7 +56,7 @@ def stats_small_3p_missed_vs_length(env, df_per_gene, tools, reference):
     # collect in bins
     bins = [[0, 150], [150, 300], [300, 600], [600, 900], [900, float('inf')]]
 
-    list_entries = list()
+    list_entries = []
     for t in tools + [reference]:
         df_tool = df_per_gene[~df_per_gene[f"5p-{t}"].isna()]
         for b in bins:

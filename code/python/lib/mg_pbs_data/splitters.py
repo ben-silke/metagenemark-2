@@ -43,16 +43,13 @@ def split_gil(data, num_splits, **kwargs):
     gil = data
 
 
-    list_of_list_of_gi = list()
-    for i in range(num_splits):
-        list_of_list_of_gi.append(list())
-
+    list_of_list_of_gi = [[] for _ in range(num_splits)]
     for index, gi in enumerate(gil):
         index_of_list = index % num_splits
 
         list_of_list_of_gi[index_of_list].append(gi)
 
-    list_output = list()
+    list_output = []
     for i in range(len(list_of_list_of_gi)):
         val = {
             arg_name_gil: GenomeInfoList(list_of_list_of_gi[i]),
@@ -76,16 +73,13 @@ def split_list(data, num_splits, **kwargs):
     arg_name_jobid = get_value(kwargs, "arg_name_jobid", None, value_type=str)
 
 
-    list_of_lists = list()
-    for i in range(num_splits):
-        list_of_lists.append(list())
-
+    list_of_lists = [[] for _ in range(num_splits)]
     for index, item in enumerate(data):
         index_of_list = index % num_splits
 
         list_of_lists[index_of_list].append(item)
 
-    list_output = list()
+    list_output = []
     for i in range(len(list_of_lists)):
         val = {
             arg_name_data: list_of_lists[i],
@@ -108,16 +102,13 @@ def split_generator(data, num_splits, **kwargs):
     arg_name_jobid = get_value(kwargs, "arg_name_jobid", None, value_type=str)
 
 
-    list_of_lists = list()
-    for i in range(num_splits):
-        list_of_lists.append(list())
-
+    list_of_lists = [[] for _ in range(num_splits)]
     for index, item in enumerate(data):
         index_of_list = index % num_splits
 
         list_of_lists[index_of_list].append(item)
 
-    list_output = list()
+    list_output = []
     for i in range(len(list_of_lists)):
         val = {
             arg_name_data: list_of_lists[i],
@@ -147,14 +138,10 @@ def split_list_DEPRECATED(data, num_splits, pd_work, **kwargs):
     list_pf_data = data["list_pf_data"]
     pf_output_template = data["pf_output_template"]
 
-    list_splits = list()
-
-    split_number = 1
-    for v in list_pf_data:
-        list_splits.append({"pf_data": v, "pf_output": pf_output_template.format(split_number)})
-        split_number += 1
-
-    return list_splits
+    return [
+        {"pf_data": v, "pf_output": pf_output_template.format(split_number)}
+        for split_number, v in enumerate(list_pf_data, start=1)
+    ]
 
 
 def split_dict(data, num_splits, pd_work, **kwargs):
@@ -163,18 +150,14 @@ def split_dict(data, num_splits, pd_work, **kwargs):
     a_dict = data["dict"]  # type: Dict[str, Any]
     pf_output_template = data["pf_output_template"]
 
-    list_splits = list()
+    list_splits = []
     num_splits = min(num_splits, len(a_dict))
-    for i in range(num_splits):
+    for _ in range(num_splits):
         list_splits.append(dict())
         list_splits[-1]["data"] = dict()
 
-    index = 0
-
-    for k, v in a_dict.items():
+    for index, (k, v) in enumerate(a_dict.items()):
         list_splits[index % num_splits]["data"][k] = v
-        index += 1
-
     for split_number in range(1, len(list_splits) + 1):
         list_splits[split_number - 1]["pf_output"] = pf_output_template.format(split_number)
         list_splits[split_number - 1]["msa_output_start"] = split_number
@@ -190,13 +173,8 @@ def split_genome_info_list(data, num_splits, pd_work, **kwargs):
 
     pf_output_template = get_value(data, "pf_output_template", "")
 
-    if num_splits > len(genome_info_list):
-        num_splits = len(genome_info_list)
-
-    list_of_list_of_gi = list()
-    for i in range(num_splits):
-        list_of_list_of_gi.append(list())
-
+    num_splits = min(num_splits, len(genome_info_list))
+    list_of_list_of_gi = [[] for _ in range(num_splits)]
     for index, gi in enumerate(genome_info_list):
         index_of_list = index % num_splits
 
@@ -211,21 +189,15 @@ def split_genome_info_list(data, num_splits, pd_work, **kwargs):
 
 
 def split_q3prime_files(data, num_splits, pd_work, **kwargs):
-    # type: (Dict[str, Any], int, str, Dict[str, Any]) -> List[Dict[str, str]]
-
-    file_number = 1
-
-    list_splits = list()
+    list_splits = []
     q3prime_to_list_pf = data["q3prime_to_list_pf"]
     pf_output_template = data["pf_output_template"]
 
-    for q3prime_key in q3prime_to_list_pf.keys():
+    for file_number, q3prime_key in enumerate(q3prime_to_list_pf.keys(), start=1):
         list_pf = q3prime_to_list_pf[q3prime_key]
         list_splits.append({"list_pf_data": list_pf, "pf_output": pf_output_template.format(file_number),
                             "q3prime": q3prime_key,
                             "msa_output_start": file_number})
-
-        file_number += 1
 
     return list_splits
 
@@ -247,7 +219,7 @@ def split_list_and_remerge_by_key(data, num_splits, pd_work, **kwargs):
     group_key = data["group_key"]
     pf_output_template = data["pf_output_template"]
 
-    list_pf_new = list()
+    list_pf_new = []
 
     for pf_old in list_pf_data:
 
@@ -295,7 +267,7 @@ def split_query_genomes_target_genomes_one_vs_group(data, num_splits, pd_work, *
     pf_t_list = data["pf_t_list"]
     pf_output_template = data["pf_output_template"]
 
-    list_pf_splits = list()
+    list_pf_splits = []
 
     q_list = GenomeInfoList.init_from_file(pf_q_list)
     t_list = GenomeInfoList.init_from_file(pf_t_list)

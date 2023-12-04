@@ -51,7 +51,7 @@ def get_tags_for_motif(motif, group):
     group = group.upper()
     prefix = f"{motif}_{group}"
 
-    entries = list()
+    entries = []
     for index in [0,1,2]:
 
         p_index = f"{prefix}_{index}"
@@ -83,19 +83,19 @@ def get_tags_for_start_context(sc_tag, group):
 
 def component_to_tags(component, group):
     # type: (str, str) -> List[str]
-    if component.upper() == "RBS" or component.upper() == "PROMOTER":
+    if component.upper() in ["RBS", "PROMOTER"]:
         return get_tags_for_motif(component, group)
     if component.upper() == "STARTS":
         return [f"{s}_{group}" for s in ["ATG", "GTG", "TTG"]]
     if component.upper() in {"SC_RBS", "SC_PROMOTER"}:
         return get_tags_for_start_context(component.upper(), group)
-    return list()
+    return []
 
 
 def get_tags_from_components(list_components, list_groups):
     # type: (List[str], List[str]) -> List[str]
 
-    list_tags = list()
+    list_tags = []
     for c in list_components:
         for g in list_groups:
             list_tags += component_to_tags(c, g)

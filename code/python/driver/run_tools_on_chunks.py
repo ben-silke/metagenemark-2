@@ -128,7 +128,7 @@ def run_tools_on_chunk(env, gi, tools, chunk, **kwargs):
     pf_chunks = mkstemp_closed(dir=env["pd-work"], suffix=".fasta")
     gs.write_to_file(pf_chunks)
 
-    list_entries = list()
+    list_entries = []
 
     for t, dn in zip(tools, dn_tools):
         logger.debug(f"{gi.name};{chunk};{t}")
@@ -214,7 +214,7 @@ def run_tools_on_gi(env, gi, tools, chunks, **kwargs):
 
     else:
 
-        list_df = list()
+        list_df = []
         for chunk in chunks:
             logger.debug(f"{gi.name};{chunk}")
             curr = run_tools_on_chunk(env, gi, tools, chunk, **kwargs)
@@ -224,11 +224,7 @@ def run_tools_on_gi(env, gi, tools, chunks, **kwargs):
 
 
 def run_tools_on_gil(env, gil, tools, chunks, **kwargs):
-    # type: (Environment, GenomeInfoList, List[str], List[int], Dict[str, Any]) -> None
-    list_df = list()
-    for gi in gil:
-        list_df.append(run_tools_on_gi(env, gi, tools, chunks, **kwargs))
-
+    list_df = [run_tools_on_gi(env, gi, tools, chunks, **kwargs) for gi in gil]
     return pd.concat(list_df, sort=False, ignore_index=True)
 
 def main(env, args):

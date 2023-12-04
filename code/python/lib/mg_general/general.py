@@ -113,22 +113,14 @@ def next_name(pd_work, **kwargs):
         next_name.counters[ext] = -1
     next_name.counters[ext] += 1
 
-    return os_join(pd_work, "{}.{}".format(next_name.counters[ext], ext))
+    return os_join(pd_work, f"{next_name.counters[ext]}.{ext}")
 
 
 def create_gene_key(genome=None, accession=None, left=None, right=None, strand=None, delimiter=";"):
     # type: (object, object, object, object, object, str) -> str
 
-    return "{}{}{}{}{}{}{}{}{}".format(
-        genome, delimiter,
-        accession, delimiter,
-        left, delimiter,
-        right, delimiter,
-        strand
-    )
+    return f"{genome}{delimiter}{accession}{delimiter}{left}{delimiter}{right}{delimiter}{strand}"
 
 def fix_names(r):
     # type: (pd.Series) -> str
-    return "{}. {}".format(
-        r["Genome"][0], r["Genome"].split("_")[1]
-    )
+    return f'{r["Genome"][0]}. {r["Genome"].split("_")[1]}'

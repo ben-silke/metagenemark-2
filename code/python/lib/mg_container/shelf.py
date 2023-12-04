@@ -15,16 +15,11 @@ def read_value_for_tag(words, position, **kwargs):
     stop_if_starts_with = get_value(kwargs, "stop_if_starts_with", {"$"}, valid_type=Set[str])
 
     num_words = len(words)
-    result = list()
+    result = []
     while position < num_words:
         curr_word = words[position]
 
-        should_stop = False
-        for s in stop_if_starts_with:
-            if curr_word.startswith(s):
-                should_stop = True
-                break
-
+        should_stop = any(curr_word.startswith(s) for s in stop_if_starts_with)
         if should_stop:
             break
 
@@ -70,11 +65,10 @@ def convert_to_matrix(words):
             break
 
         try:
-            float_word = float(curr_word)
-            # number
             if key is None:
                 raise ValueError(f"Readingn value {curr_word} without key")
 
+            float_word = float(curr_word)
             result[key].append(float_word)
         except ValueError:
 
@@ -83,7 +77,7 @@ def convert_to_matrix(words):
             if key in result:
                 raise ValueError(f"Reading same key multiple times {key}")
 
-            result[key] = list()
+            result[key] = []
 
     return result
 
@@ -103,13 +97,6 @@ def gms2_model_matrix_to_string(value):
 
 
 def gms2_model_position_distribution_to_string(value):
-    # type: (List[float]) -> str
-
-    out = ""
-
-    for i, v in enumerate(value):
-        out += f"{i} {v}\n"
-
-    return out
+    return "".join(f"{i} {v}\n" for i, v in enumerate(value))
 
 
